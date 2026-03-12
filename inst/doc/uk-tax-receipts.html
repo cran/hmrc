@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Getting UK tax data with hmrc</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting UK tax data with hmrc</h1>
+
+
+
+<p>The <code>hmrc</code> package provides tidy access to statistical
+data published by HM Revenue and Customs (HMRC) on GOV.UK. All functions
+resolve download URLs at runtime via the GOV.UK Content API and cache
+files locally between sessions.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(hmrc)</span></code></pre></div>
+<div id="monthly-tax-receipts" class="section level2">
+<h2>Monthly tax receipts</h2>
+<p><code>get_tax_receipts()</code> downloads the monthly HMRC Tax
+Receipts and National Insurance Contributions bulletin, covering 41 tax
+heads from April 2016 to the most recent published month.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># All 41 tax heads</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>receipts <span class="ot">&lt;-</span> <span class="fu">get_tax_receipts</span>()</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">head</span>(receipts)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt;         date   tax_head          description receipts_gbp_m</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;   2016-04-01 income_tax Income Tax (PAYE...          17423</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;   2016-05-01 income_tax Income Tax (PAYE...          11847</span></span></code></pre></div>
+<p>Use <code>list_tax_heads()</code> to see all available identifiers
+without downloading data:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">list_tax_heads</span>()</span></code></pre></div>
+<p>Filter to specific heads and date ranges:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>big_three <span class="ot">&lt;-</span> <span class="fu">get_tax_receipts</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">tax   =</span> <span class="fu">c</span>(<span class="st">&quot;income_tax&quot;</span>, <span class="st">&quot;vat&quot;</span>, <span class="st">&quot;nics_total&quot;</span>),</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">start =</span> <span class="st">&quot;2020-01&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">ggplot</span>(big_three, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> receipts_gbp_m <span class="sc">/</span> <span class="dv">1000</span>, <span class="at">colour =</span> description)) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;bn&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK monthly tax receipts&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;GBP billions&quot;</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    <span class="at">colour  =</span> <span class="cn">NULL</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Tax Receipts and NICs bulletin&quot;</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>)</span></code></pre></div>
+</div>
+<div id="vat" class="section level2">
+<h2>VAT</h2>
+<p><code>get_vat()</code> covers monthly VAT receipts from April 1973,
+broken into payments, repayments, import VAT, and home VAT.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Net VAT: total minus repayments</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>vat <span class="ot">&lt;-</span> <span class="fu">get_vat</span>(<span class="at">measure =</span> <span class="fu">c</span>(<span class="st">&quot;total&quot;</span>, <span class="st">&quot;repayments&quot;</span>), <span class="at">start =</span> <span class="st">&quot;2015-01&quot;</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># Repayments are recorded as negative (money flowing out of HMRC)</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="fu">head</span>(vat[vat<span class="sc">$</span>measure <span class="sc">==</span> <span class="st">&quot;repayments&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)])</span></code></pre></div>
+</div>
+<div id="fuel-duties" class="section level2">
+<h2>Fuel duties</h2>
+<p><code>get_fuel_duties()</code> covers monthly hydrocarbon oil duty
+receipts from January 1990, broken down into petrol, diesel, other, and
+total.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>fuel <span class="ot">&lt;-</span> <span class="fu">get_fuel_duties</span>(<span class="at">fuel =</span> <span class="st">&quot;total&quot;</span>, <span class="at">start =</span> <span class="st">&quot;2010-01&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co"># Annual totals</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>fuel<span class="sc">$</span>year <span class="ot">&lt;-</span> <span class="fu">format</span>(fuel<span class="sc">$</span>date, <span class="st">&quot;%Y&quot;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">aggregate</span>(receipts_gbp_m <span class="sc">~</span> year, <span class="at">data =</span> fuel, <span class="at">FUN =</span> sum)</span></code></pre></div>
+</div>
+<div id="tobacco-duties" class="section level2">
+<h2>Tobacco duties</h2>
+<p><code>get_tobacco_duties()</code> covers monthly tobacco duty
+receipts from January 1991, by product: cigarettes, cigars, hand-rolling
+tobacco, other, and total.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>tobacco <span class="ot">&lt;-</span> <span class="fu">get_tobacco_duties</span>(<span class="at">product =</span> <span class="fu">c</span>(<span class="st">&quot;cigarettes&quot;</span>, <span class="st">&quot;hand_rolling&quot;</span>),</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>                              <span class="at">start   =</span> <span class="st">&quot;2015-01&quot;</span>)</span></code></pre></div>
+</div>
+<div id="corporation-tax" class="section level2">
+<h2>Corporation Tax</h2>
+<p><code>get_corporation_tax()</code> returns annual Corporation Tax
+receipts broken down by levy type — onshore CT, offshore CT, Bank Levy,
+Bank Surcharge, Residential Property Developer Tax (RPDT), Energy
+Profits Levy (EPL), and Electricity Generators Levy (EGL). Covers
+2019-20 to the most recent financial year.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>ct <span class="ot">&lt;-</span> <span class="fu">get_corporation_tax</span>()</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>ct[ct<span class="sc">$</span>type <span class="sc">==</span> <span class="st">&quot;total_ct&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="stamp-duty" class="section level2">
+<h2>Stamp duty</h2>
+<p><code>get_stamp_duty()</code> returns annual stamp duty receipts by
+type from 2003-04: SDLT on property, SDLT on new leases, SDRT on shares,
+and stamp duty on documents.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sd <span class="ot">&lt;-</span> <span class="fu">get_stamp_duty</span>(<span class="at">type =</span> <span class="st">&quot;sdlt_total&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">tail</span>(sd[, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)], <span class="dv">5</span>)</span></code></pre></div>
+</div>
+<div id="rd-tax-credits" class="section level2">
+<h2>R&amp;D tax credits</h2>
+<p><code>get_rd_credits()</code> returns annual statistics on R&amp;D
+tax credit claims and their cost by scheme (SME R&amp;D Relief and RDEC)
+from 2000-01.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Cost of R&amp;D credits — SME vs RDEC</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>rd <span class="ot">&lt;-</span> <span class="fu">get_rd_credits</span>(<span class="at">measure =</span> <span class="st">&quot;amount_gbp_m&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>rd[rd<span class="sc">$</span>tax_year <span class="sc">==</span> <span class="st">&quot;2023-24&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;scheme&quot;</span>, <span class="st">&quot;description&quot;</span>, <span class="st">&quot;value&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="tax-gap" class="section level2">
+<h2>Tax gap</h2>
+<p><code>get_tax_gap()</code> returns the most recent cross-sectional
+tax gap estimates, broken down by tax type, taxpayer group, and
+behaviour component (evasion, error, avoidance, etc.).</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>gap <span class="ot">&lt;-</span> <span class="fu">get_tax_gap</span>()</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># Sort by absolute gap</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>gap[<span class="fu">order</span>(<span class="sc">-</span>gap<span class="sc">$</span>gap_gbp_bn),</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;tax&quot;</span>, <span class="st">&quot;component&quot;</span>, <span class="st">&quot;gap_gbp_bn&quot;</span>, <span class="st">&quot;uncertainty&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="income-tax-liabilities" class="section level2">
+<h2>Income Tax liabilities</h2>
+<p><code>get_income_tax_stats()</code> returns annual Income Tax
+liabilities by income range (HMRC Table 2.5), including taxpayer counts,
+total income, tax liabilities, and average tax rates.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>it <span class="ot">&lt;-</span> <span class="fu">get_income_tax_stats</span>(<span class="at">tax_year =</span> <span class="st">&quot;2023-24&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>it[, <span class="fu">c</span>(<span class="st">&quot;income_range&quot;</span>, <span class="st">&quot;taxpayers_thousands&quot;</span>, <span class="st">&quot;tax_liability_gbp_m&quot;</span>, <span class="st">&quot;average_rate_pct&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="property-transactions" class="section level2">
+<h2>Property transactions</h2>
+<p><code>get_property_transactions()</code> returns monthly counts of
+residential and non-residential property transactions by UK nation from
+April 2005.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>prop <span class="ot">&lt;-</span> <span class="fu">get_property_transactions</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">type   =</span> <span class="st">&quot;residential&quot;</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="at">nation =</span> <span class="st">&quot;uk&quot;</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="at">start  =</span> <span class="st">&quot;2018-01&quot;</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">ggplot</span>(prop, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> transactions <span class="sc">/</span> <span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#3B82F6&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;k&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK residential property transactions&quot;</span>,</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;Transactions (thousands)&quot;</span>,</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Monthly Property Transactions bulletin&quot;</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div>
+</div>
+<div id="caching" class="section level2">
+<h2>Caching</h2>
+<p>All downloads are cached locally in your user cache directory.
+Subsequent calls return the cached file instantly with no network
+request.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Remove files older than 30 days</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">clear_cache</span>(<span class="at">max_age_days =</span> <span class="dv">30</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co"># Remove everything and start fresh</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">clear_cache</span>()</span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
