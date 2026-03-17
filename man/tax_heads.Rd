@@ -5,7 +5,7 @@
 \alias{tax_heads}
 \title{Tax head lookup table}
 \format{
-A data frame with 29 rows and 4 columns:
+A data frame with 41 rows and 4 columns:
 \describe{
 \item{tax_head}{Character. Identifier used in the \code{tax} argument of
 \code{\link[=get_tax_receipts]{get_tax_receipts()}}.}

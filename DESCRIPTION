@@ -1,16 +1,16 @@
 Package: hmrc
-Title: Download and Tidy HMRC Statistical Data
-Version: 0.3.0
+Title: Download and Tidy 'HMRC' Statistical Data
+Version: 0.3.2
 Authors@R: 
     person("Charles", "Coverdale", , "charlesfcoverdale@gmail.com",
            role = c("aut", "cre"))
 Description: Provides functions to download, parse, and tidy statistical
-    data published by HM Revenue and Customs (HMRC) on GOV.UK. Covers
+    data published by 'HM Revenue and Customs' ('HMRC') on 'GOV.UK'. Covers
     monthly tax receipts (41 tax heads from 2016), VAT (from 1973), fuel
     duties (from 1990), tobacco duties (from 1991), annual Corporation Tax
     receipts, stamp duty, research and development tax credit statistics
     (from 2000), tax gap estimates, Income Tax liabilities by income
-    range, and monthly property transaction counts. File URLs are resolved at runtime via the GOV.UK Content API
+    range, and monthly property transaction counts. File URLs are resolved at runtime via the 'GOV.UK' Content API
     <https://www.gov.uk/api/content>, so data is always current without
     hardcoded URLs. Files are cached locally between sessions.
 License: MIT + file LICENSE
@@ -27,8 +27,8 @@ BugReports: https://github.com/charlescoverdale/hmrc/issues
 Depends: R (>= 4.1.0)
 LazyData: true
 NeedsCompilation: no
-Packaged: 2026-03-08 15:30:25 UTC; charlescoverdale
+Packaged: 2026-03-16 18:11:55 UTC; charlescoverdale
 Author: Charles Coverdale [aut, cre]
 Maintainer: Charles Coverdale <charlesfcoverdale@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-03-12 08:50:02 UTC
+Date/Publication: 2026-03-17 08:40:02 UTC

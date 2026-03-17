@@ -1,3 +1,13 @@
+# hmrc 0.3.2
+
+* Removed non-existent pkgdown URL from DESCRIPTION.
+
+# hmrc 0.3.1
+
+* Examples now cache to `tempdir()` instead of the user's home directory,
+  fixing CRAN policy compliance for `\donttest` examples.
+* Cache directory is now configurable via `options(hmrc.cache_dir = ...)`.
+
 # hmrc 0.3.0
 
 * Added `get_income_tax_stats()`: annual Income Tax liabilities by income range,

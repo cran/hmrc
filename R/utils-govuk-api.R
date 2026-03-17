@@ -19,7 +19,10 @@ resolve_govuk_url <- function(slug, filename_pattern) {
 
   resp <- tryCatch(
     httr2::request(api_url) |>
+      httr2::req_user_agent("hmrc R package (https://github.com/charlescoverdale/hmrc)") |>
+      httr2::req_throttle(rate = 5 / 10) |>
       httr2::req_timeout(30) |>
+      httr2::req_retry(max_tries = 3) |>
       httr2::req_error(is_error = function(r) FALSE) |>
       httr2::req_perform(),
     error = function(e) {
@@ -61,6 +64,12 @@ resolve_govuk_url <- function(slug, filename_pattern) {
   matches[[1]]$url
 }
 
+#' Get the cache directory, respecting the hmrc.cache_dir option
+#' @noRd
+hmrc_cache_dir <- function() {
+  getOption("hmrc.cache_dir", default = tools::R_user_dir("hmrc", "cache"))
+}
+
 #' Download a file with local caching
 #'
 #' @param url URL to download
@@ -68,7 +77,7 @@ resolve_govuk_url <- function(slug, filename_pattern) {
 #' @return Path to the local (cached) file
 #' @noRd
 download_cached <- function(url, cache = TRUE) {
-  cache_dir  <- tools::R_user_dir("hmrc", "cache")
+  cache_dir  <- hmrc_cache_dir()
   # Use a hash of the URL as the cache filename, preserving extension
   ext        <- tools::file_ext(url)
   ext        <- if (nzchar(ext)) paste0(".", ext) else ""
@@ -84,7 +93,10 @@ download_cached <- function(url, cache = TRUE) {
 
   tryCatch(
     httr2::request(url) |>
+      httr2::req_user_agent("hmrc R package (https://github.com/charlescoverdale/hmrc)") |>
+      httr2::req_throttle(rate = 5 / 10) |>
       httr2::req_timeout(120) |>
+      httr2::req_retry(max_tries = 3) |>
       httr2::req_perform(path = cache_file),
     error = function(e) {
       if (file.exists(cache_file)) unlink(cache_file)

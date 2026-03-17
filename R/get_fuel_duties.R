@@ -23,13 +23,16 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(hmrc.cache_dir = tempdir())
 #' # Total fuel duty receipts since 2010
 #' get_fuel_duties(fuel = "total", start = "2010-01")
 #'
 #' # All categories
 #' get_fuel_duties()
+#' options(op)
 #' }
 #'
+#' @family duties
 #' @export
 get_fuel_duties <- function(fuel  = NULL,
                             start = NULL,

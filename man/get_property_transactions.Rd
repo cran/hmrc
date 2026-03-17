@@ -50,12 +50,19 @@ to the most recent completed month.
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # All nations, all types
 get_property_transactions()
 
 # Residential only, England, since 2020
 get_property_transactions(type = "residential", nation = "england",
                           start = "2020-01")
+options(op)
 }
 
 }
+\seealso{
+Other property: 
+\code{\link{get_stamp_duty}()}
+}
+\concept{property}

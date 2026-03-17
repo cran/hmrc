@@ -40,6 +40,7 @@ granularity), updated on approximately the 15th working day of each month.
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # All tax heads
 get_tax_receipts()
 
@@ -51,6 +52,13 @@ get_tax_receipts(start = "2020-04")
 
 # VAT in a specific window
 get_tax_receipts(tax = "vat", start = "2019-01", end = "2024-12")
+options(op)
 }
 
 }
+\seealso{
+Other tax receipts: 
+\code{\link{get_income_tax_stats}()},
+\code{\link{get_vat}()}
+}
+\concept{tax receipts}

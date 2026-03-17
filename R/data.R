@@ -3,7 +3,7 @@
 #' A data frame describing all tax and duty series available in
 #' [get_tax_receipts()].
 #'
-#' @format A data frame with 29 rows and 4 columns:
+#' @format A data frame with 41 rows and 4 columns:
 #'   \describe{
 #'     \item{tax_head}{Character. Identifier used in the `tax` argument of
 #'       [get_tax_receipts()].}

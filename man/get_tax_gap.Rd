@@ -47,11 +47,19 @@ in a separate HMRC publication (Measuring the Tax Gap: Time Series).
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # Full tax gap breakdown
 get_tax_gap()
 
 # VAT gap only
 get_tax_gap(tax = "VAT")
+options(op)
 }
 
 }
+\seealso{
+Other data access: 
+\code{\link{clear_cache}()},
+\code{\link{list_tax_heads}()}
+}
+\concept{data access}

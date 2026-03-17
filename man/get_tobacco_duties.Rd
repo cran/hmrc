@@ -37,11 +37,18 @@ tobacco products duty receipts by product type. Data runs from January
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # All products since 2015
 get_tobacco_duties(start = "2015-01")
 
 # Cigarettes only
 get_tobacco_duties(product = "cigarettes")
+options(op)
 }
 
 }
+\seealso{
+Other duties: 
+\code{\link{get_fuel_duties}()}
+}
+\concept{duties}

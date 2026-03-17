@@ -44,11 +44,18 @@ are provisional and subject to revision as late claims are processed.
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # All R&D credit data
 get_rd_credits()
 
 # SME scheme claims only
 get_rd_credits(scheme = "sme", measure = "claims")
+options(op)
 }
 
 }
+\seealso{
+Other corporate: 
+\code{\link{get_corporation_tax}()}
+}
+\concept{corporate}

@@ -19,6 +19,7 @@
 #' @examples
 #' list_tax_heads()
 #'
+#' @family data access
 #' @export
 list_tax_heads <- function() {
   tax_heads

@@ -33,13 +33,16 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(hmrc.cache_dir = tempdir())
 #' # All R&D credit data
 #' get_rd_credits()
 #'
 #' # SME scheme claims only
 #' get_rd_credits(scheme = "sme", measure = "claims")
+#' options(op)
 #' }
 #'
+#' @family corporate
 #' @export
 get_rd_credits <- function(scheme  = NULL,
                             measure = NULL,

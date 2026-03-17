@@ -28,3 +28,9 @@ bundled with the package.
 list_tax_heads()
 
 }
+\seealso{
+Other data access: 
+\code{\link{clear_cache}()},
+\code{\link{get_tax_gap}()}
+}
+\concept{data access}

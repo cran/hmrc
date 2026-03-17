@@ -14,8 +14,16 @@ at runtime via the GOV.UK Content API, so data is always current.
 \section{Main functions}{
 
 \itemize{
-\item \code{\link[=get_tax_receipts]{get_tax_receipts()}} — monthly tax receipts and NICs (all heads, April 1999+)
-\item \code{\link[=get_property_transactions]{get_property_transactions()}} — monthly property transaction counts (Sep 2013+)
+\item \code{\link[=get_tax_receipts]{get_tax_receipts()}} — monthly tax receipts and NICs (all heads, April 2016+)
+\item \code{\link[=get_property_transactions]{get_property_transactions()}} — monthly property transaction counts (April 2005+)
+\item \code{\link[=get_income_tax_stats]{get_income_tax_stats()}} — annual Income Tax liabilities by income range
+\item \code{\link[=get_tax_gap]{get_tax_gap()}} — annual tax gap estimates by tax type
+\item \code{\link[=get_stamp_duty]{get_stamp_duty()}} — annual stamp duty receipts (SDLT, SDRT)
+\item \code{\link[=get_vat]{get_vat()}} — monthly VAT receipts breakdown (April 1973+)
+\item \code{\link[=get_rd_credits]{get_rd_credits()}} — annual R&D tax credit statistics (2000-01+)
+\item \code{\link[=get_fuel_duties]{get_fuel_duties()}} — monthly fuel duty receipts (January 1990+)
+\item \code{\link[=get_tobacco_duties]{get_tobacco_duties()}} — monthly tobacco duty receipts (January 1991+)
+\item \code{\link[=get_corporation_tax]{get_corporation_tax()}} — annual Corporation Tax receipts by type
 \item \code{\link[=list_tax_heads]{list_tax_heads()}} — lookup table of available tax head identifiers
 \item \code{\link[=clear_cache]{clear_cache()}} — manage locally cached files
 }
@@ -39,4 +47,14 @@ Useful links:
 \strong{Maintainer}: Charles Coverdale \email{charlesfcoverdale@gmail.com}
 
 }
+\concept{HMRC}
+\concept{UK tax}
+\concept{VAT}
+\concept{corporation tax}
+\concept{fuel duty}
+\concept{government revenue}
+\concept{income tax}
+\concept{stamp duty}
+\concept{tax revenue}
+\concept{tobacco duty}
 \keyword{internal}

@@ -67,6 +67,6 @@ test_that("get_tax_receipts() receipts are numeric", {
   skip_if_offline()
 
   out <- get_tax_receipts(tax = "vat", start = "2020-01", end = "2020-06")
-  expect_true(all(!is.na(out$receipts_gbp_m) | is.na(out$receipts_gbp_m)))
+  expect_false(anyNA(out$receipts_gbp_m))
   expect_type(out$receipts_gbp_m, "double")
 })

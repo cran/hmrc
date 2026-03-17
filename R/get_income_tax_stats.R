@@ -36,12 +36,15 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(hmrc.cache_dir = tempdir())
 #' get_income_tax_stats()
 #'
 #' # Single tax year
 #' get_income_tax_stats(tax_year = "2023-24")
+#' options(op)
 #' }
 #'
+#' @family tax receipts
 #' @export
 get_income_tax_stats <- function(tax_year = NULL,
                                  cache    = TRUE) {

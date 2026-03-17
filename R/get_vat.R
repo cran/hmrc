@@ -32,13 +32,16 @@
 #'
 #' @examples
 #' \donttest{
+#' op <- options(hmrc.cache_dir = tempdir())
 #' # Total VAT receipts since 2010
 #' get_vat(measure = "total", start = "2010-01")
 #'
 #' # Full breakdown
 #' get_vat(start = "2020-01")
+#' options(op)
 #' }
 #'
+#' @family tax receipts
 #' @export
 get_vat <- function(measure = NULL,
                     start   = NULL,

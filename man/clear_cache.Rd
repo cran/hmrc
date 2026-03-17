@@ -21,11 +21,19 @@ remove only files older than a given number of days.
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 # Remove all cached files
 clear_cache()
 
 # Remove files older than 30 days
 clear_cache(max_age_days = 30)
+options(op)
 }
 
 }
+\seealso{
+Other data access: 
+\code{\link{get_tax_gap}()},
+\code{\link{list_tax_heads}()}
+}
+\concept{data access}

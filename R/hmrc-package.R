@@ -6,8 +6,16 @@
 #' at runtime via the GOV.UK Content API, so data is always current.
 #'
 #' @section Main functions:
-#' - [get_tax_receipts()] — monthly tax receipts and NICs (all heads, April 1999+)
-#' - [get_property_transactions()] — monthly property transaction counts (Sep 2013+)
+#' - [get_tax_receipts()] — monthly tax receipts and NICs (all heads, April 2016+)
+#' - [get_property_transactions()] — monthly property transaction counts (April 2005+)
+#' - [get_income_tax_stats()] — annual Income Tax liabilities by income range
+#' - [get_tax_gap()] — annual tax gap estimates by tax type
+#' - [get_stamp_duty()] — annual stamp duty receipts (SDLT, SDRT)
+#' - [get_vat()] — monthly VAT receipts breakdown (April 1973+)
+#' - [get_rd_credits()] — annual R&D tax credit statistics (2000-01+)
+#' - [get_fuel_duties()] — monthly fuel duty receipts (January 1990+)
+#' - [get_tobacco_duties()] — monthly tobacco duty receipts (January 1991+)
+#' - [get_corporation_tax()] — annual Corporation Tax receipts by type
 #' - [list_tax_heads()] — lookup table of available tax head identifiers
 #' - [clear_cache()] — manage locally cached files
 #'
@@ -16,6 +24,16 @@
 #' See <https://www.gov.uk/government/organisations/hm-revenue-customs/about/statistics>.
 #'
 #' @keywords internal
+#' @concept HMRC
+#' @concept UK tax
+#' @concept tax revenue
+#' @concept VAT
+#' @concept income tax
+#' @concept corporation tax
+#' @concept stamp duty
+#' @concept fuel duty
+#' @concept tobacco duty
+#' @concept government revenue
 "_PACKAGE"
 
 utils::globalVariables("tax_heads")

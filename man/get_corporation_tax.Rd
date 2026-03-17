@@ -33,7 +33,14 @@ have \code{NA} values for earlier years.
 }
 \examples{
 \donttest{
+op <- options(hmrc.cache_dir = tempdir())
 get_corporation_tax()
+options(op)
 }
 
 }
+\seealso{
+Other corporate: 
+\code{\link{get_rd_credits}()}
+}
+\concept{corporate}
