@@ -1,18 +1,22 @@
 # utils-govuk-api.R — internal helpers for GOV.UK Content API + caching
 
-GOVUK_CONTENT_API <- "https://www.gov.uk/api/content/government/statistics/"
+GOVUK_BASE              <- "https://www.gov.uk"
+GOVUK_CONTENT_API       <- "https://www.gov.uk/api/content/government/statistics/"
+GOVUK_PUBLICATION_PATH  <- "/government/statistics/"
 
 #' Resolve the current download URL for a GOV.UK statistics attachment
 #'
-#' HMRC data files are hosted on assets.publishing.service.gov.uk with a
-#' random media hash in the path that changes each publication cycle. This
-#' function queries the GOV.UK Content API to find the current URL.
+#' HMRC files are hosted on `assets.publishing.service.gov.uk` with a media
+#' hash in the path that changes each publication cycle. This function queries
+#' the GOV.UK Content API and returns a list with both the publication page
+#' URL and the resolved attachment URL.
 #'
-#' @param slug GOV.UK statistics page slug (the path after /government/statistics/)
-#' @param filename_pattern Regex pattern to identify the correct attachment
-#' @return Character string: current download URL
+#' @param slug GOV.UK statistics page slug.
+#' @param filename_pattern Regex pattern to identify the correct attachment.
+#' @return A list with `page_url`, `attachment_url`, `attachment_name`,
+#'   `slug`, and (when present) `public_updated_at`.
 #' @noRd
-resolve_govuk_url <- function(slug, filename_pattern) {
+resolve_govuk_attachment <- function(slug, filename_pattern) {
   api_url <- paste0(GOVUK_CONTENT_API, slug)
 
   cli::cli_progress_step("Resolving download URL from GOV.UK Content API")
@@ -61,27 +65,50 @@ resolve_govuk_url <- function(slug, filename_pattern) {
     ))
   }
 
-  matches[[1]]$url
+  page_url <- paste0(GOVUK_BASE, GOVUK_PUBLICATION_PATH, slug)
+
+  list(
+    slug              = slug,
+    page_url          = page_url,
+    attachment_url    = matches[[1]]$url,
+    attachment_name   = matches[[1]]$filename %||% NA_character_,
+    public_updated_at = body$public_updated_at %||% NA_character_
+  )
 }
 
-#' Get the cache directory, respecting the hmrc.cache_dir option
+#' Backwards-compatible wrapper returning just the attachment URL.
+#' @noRd
+resolve_govuk_url <- function(slug, filename_pattern) {
+  resolve_govuk_attachment(slug, filename_pattern)$attachment_url
+}
+
+#' Get the cache directory, respecting the `hmrc.cache_dir` option
 #' @noRd
 hmrc_cache_dir <- function() {
   getOption("hmrc.cache_dir", default = tools::R_user_dir("hmrc", "cache"))
 }
 
+#' Compute the cache filename for a URL
+#' @noRd
+hmrc_cache_path <- function(url, vintage_key = NULL) {
+  cache_dir <- hmrc_cache_dir()
+  ext       <- tools::file_ext(url)
+  ext       <- if (nzchar(ext)) paste0(".", ext) else ""
+  hash      <- digest_url(if (is.null(vintage_key)) url else paste0(url, "@", vintage_key))
+  file.path(cache_dir, paste0(hash, ext))
+}
+
 #' Download a file with local caching
 #'
-#' @param url URL to download
+#' @param url URL to download.
 #' @param cache Logical: use cached file if available?
-#' @return Path to the local (cached) file
+#' @param vintage_key Optional string mixed into the cache key so vintage
+#'   downloads do not collide with the latest version.
+#' @return Path to the local (cached) file.
 #' @noRd
-download_cached <- function(url, cache = TRUE) {
+download_cached <- function(url, cache = TRUE, vintage_key = NULL) {
   cache_dir  <- hmrc_cache_dir()
-  # Use a hash of the URL as the cache filename, preserving extension
-  ext        <- tools::file_ext(url)
-  ext        <- if (nzchar(ext)) paste0(".", ext) else ""
-  cache_file <- file.path(cache_dir, paste0(digest_url(url), ext))
+  cache_file <- hmrc_cache_path(url, vintage_key = vintage_key)
 
   if (cache && file.exists(cache_file)) {
     cli::cli_progress_step("Using cached file")
@@ -113,7 +140,6 @@ download_cached <- function(url, cache = TRUE) {
 #' Simple URL hash for cache filenames (no extra dependencies)
 #' @noRd
 digest_url <- function(url) {
-  # Weighted checksum — collision-resistant enough for a local cache
   chars    <- utf8ToInt(url)
   weights  <- seq_along(chars)
   checksum <- sum(as.numeric(chars) * weights) %% (2^31 - 1)

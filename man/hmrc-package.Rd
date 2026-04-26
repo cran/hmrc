@@ -7,26 +7,47 @@
 \title{hmrc: Download and Tidy HMRC Statistical Data}
 \description{
 Provides functions to download, parse, and tidy statistical data published
-by HM Revenue and Customs (HMRC) on GOV.UK. Covers tax receipts, National
-Insurance contributions, and property transactions. File URLs are resolved
-at runtime via the GOV.UK Content API, so data is always current.
+by HM Revenue and Customs (HMRC) on GOV.UK. Returns annotated \code{hmrc_tbl}
+data frames with provenance metadata (source URL, fetch time, vintage,
+cell methods) for reproducible fiscal research. File URLs are resolved at
+runtime via the GOV.UK Content API, so data is always current.
 }
-\section{Main functions}{
+\section{Data fetchers}{
 
 \itemize{
-\item \code{\link[=get_tax_receipts]{get_tax_receipts()}} — monthly tax receipts and NICs (all heads, April 2016+)
-\item \code{\link[=get_property_transactions]{get_property_transactions()}} — monthly property transaction counts (April 2005+)
-\item \code{\link[=get_income_tax_stats]{get_income_tax_stats()}} — annual Income Tax liabilities by income range
-\item \code{\link[=get_tax_gap]{get_tax_gap()}} — annual tax gap estimates by tax type
-\item \code{\link[=get_stamp_duty]{get_stamp_duty()}} — annual stamp duty receipts (SDLT, SDRT)
-\item \code{\link[=get_vat]{get_vat()}} — monthly VAT receipts breakdown (April 1973+)
-\item \code{\link[=get_rd_credits]{get_rd_credits()}} — annual R&D tax credit statistics (2000-01+)
-\item \code{\link[=get_fuel_duties]{get_fuel_duties()}} — monthly fuel duty receipts (January 1990+)
-\item \code{\link[=get_tobacco_duties]{get_tobacco_duties()}} — monthly tobacco duty receipts (January 1991+)
-\item \code{\link[=get_corporation_tax]{get_corporation_tax()}} — annual Corporation Tax receipts by type
-\item \code{\link[=list_tax_heads]{list_tax_heads()}} — lookup table of available tax head identifiers
-\item \code{\link[=clear_cache]{clear_cache()}} — manage locally cached files
+\item \code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}} — monthly tax receipts and NICs (April 2008+)
+\item \code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}} — monthly property transactions (April 2005+)
+\item \code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}} — annual Income Tax liabilities by income range
+\item \code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}} — annual tax gap estimates by tax type
+\item \code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}} — annual stamp duty receipts (SDLT, SDRT)
+\item \code{\link[=hmrc_vat]{hmrc_vat()}} — monthly VAT receipts breakdown (April 1973+)
+\item \code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}} — annual R&D tax credit statistics (2000-01+)
+\item \code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}} — monthly fuel duty receipts (January 1990+)
+\item \code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}} — monthly tobacco duty receipts (January 1991+)
+\item \code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}} — annual Corporation Tax receipts by type
+\item \code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}} — annual CGT taxpayers, gains, liabilities (1987-88+)
+\item \code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}} — IHT estates and liabilities by net-estate band
+\item \code{\link[=hmrc_patent_box]{hmrc_patent_box()}} — annual Patent Box election counts and relief
+\item \code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}} — annual Film/HETV/Games/Theatre/etc reliefs
 }
+}
+
+\section{Discovery and infrastructure}{
+
+\itemize{
+\item \code{\link[=hmrc_search]{hmrc_search()}} — keyword search of the dataset catalogue
+\item \code{\link[=hmrc_publications]{hmrc_publications()}} — index of implemented + planned publications
+\item \code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}} — lookup table of tax-receipts identifiers
+\item \code{\link[=hmrc_cache_info]{hmrc_cache_info()}} — inspect locally cached files
+\item \code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}} — manage locally cached files
+\item \code{\link[=hmrc_meta]{hmrc_meta()}} — extract provenance metadata from any \code{hmrc_tbl} result
+}
+}
+
+\section{Citation}{
+
+Run \code{citation("hmrc")} for the structured citation, or see the
+\code{CITATION.cff} file at the package root for the GitHub citation widget.
 }
 
 \section{Data source}{
@@ -38,6 +59,7 @@ See \url{https://www.gov.uk/government/organisations/hm-revenue-customs/about/st
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://charlescoverdale.github.io/hmrc/}
   \item \url{https://github.com/charlescoverdale/hmrc}
   \item Report bugs at \url{https://github.com/charlescoverdale/hmrc/issues}
 }

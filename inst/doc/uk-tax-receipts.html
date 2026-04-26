@@ -344,148 +344,215 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>The <code>hmrc</code> package provides tidy access to statistical
 data published by HM Revenue and Customs (HMRC) on GOV.UK. All functions
 resolve download URLs at runtime via the GOV.UK Content API and cache
-files locally between sessions.</p>
+files locally between sessions. Every result is returned as an
+<code>hmrc_tbl</code>, a subclass of <code>data.frame</code> carrying
+provenance metadata (source URL, fetch time, vintage, cell methods) for
+reproducible fiscal research.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(hmrc)</span></code></pre></div>
+<div id="discovery" class="section level2">
+<h2>Discovery</h2>
+<p><code>hmrc_search()</code> searches the dataset catalogue by keyword.
+<code>hmrc_publications()</code> returns a tidy index of implemented and
+planned datasets.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Anything in the catalogue mentioning capital gains</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">hmrc_search</span>(<span class="st">&quot;capital gains&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co"># Only annual datasets already implemented</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">hmrc_search</span>(<span class="at">implemented =</span> <span class="cn">TRUE</span>, <span class="at">frequency =</span> <span class="st">&quot;annual&quot;</span>)</span></code></pre></div>
+</div>
 <div id="monthly-tax-receipts" class="section level2">
 <h2>Monthly tax receipts</h2>
-<p><code>get_tax_receipts()</code> downloads the monthly HMRC Tax
+<p><code>hmrc_tax_receipts()</code> downloads the monthly HMRC Tax
 Receipts and National Insurance Contributions bulletin, covering 41 tax
-heads from April 2016 to the most recent published month.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># All 41 tax heads</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>receipts <span class="ot">&lt;-</span> <span class="fu">get_tax_receipts</span>()</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">head</span>(receipts)</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt;         date   tax_head          description receipts_gbp_m</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;   2016-04-01 income_tax Income Tax (PAYE...          17423</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;   2016-05-01 income_tax Income Tax (PAYE...          11847</span></span></code></pre></div>
-<p>Use <code>list_tax_heads()</code> to see all available identifiers
-without downloading data:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">list_tax_heads</span>()</span></code></pre></div>
+heads from April 2008 to the most recent published month.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># All 41 tax heads</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>receipts <span class="ot">&lt;-</span> <span class="fu">hmrc_tax_receipts</span>()</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">head</span>(receipts)</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt;         date   tax_head          description receipts_gbp_m</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;   2016-04-01 income_tax Income Tax (PAYE...          17423</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;   2016-05-01 income_tax Income Tax (PAYE...          11847</span></span></code></pre></div>
+<p>Use <code>hmrc_list_tax_heads()</code> to see all available
+identifiers without downloading data:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">hmrc_list_tax_heads</span>()</span></code></pre></div>
 <p>Filter to specific heads and date ranges:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>big_three <span class="ot">&lt;-</span> <span class="fu">get_tax_receipts</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="at">tax   =</span> <span class="fu">c</span>(<span class="st">&quot;income_tax&quot;</span>, <span class="st">&quot;vat&quot;</span>, <span class="st">&quot;nics_total&quot;</span>),</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">start =</span> <span class="st">&quot;2020-01&quot;</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>)</span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">ggplot</span>(big_three, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> receipts_gbp_m <span class="sc">/</span> <span class="dv">1000</span>, <span class="at">colour =</span> description)) <span class="sc">+</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;bn&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK monthly tax receipts&quot;</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;GBP billions&quot;</span>,</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    <span class="at">colour  =</span> <span class="cn">NULL</span>,</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Tax Receipts and NICs bulletin&quot;</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>big_three <span class="ot">&lt;-</span> <span class="fu">hmrc_tax_receipts</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">tax   =</span> <span class="fu">c</span>(<span class="st">&quot;income_tax&quot;</span>, <span class="st">&quot;vat&quot;</span>, <span class="st">&quot;nics_total&quot;</span>),</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">start =</span> <span class="st">&quot;2020-01&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>)</span></code></pre></div>
+<p>Inspect the provenance metadata on any result:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">hmrc_meta</span>(big_three)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; $dataset</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; [1] &quot;tax_receipts_monthly&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt; $source_url</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; [1] &quot;https://www.gov.uk/government/statistics/hmrc-tax-and-nics-receipts-for-the-uk&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; $cell_methods</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;cash&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; $frequency</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; [1] &quot;monthly&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; $fetched_at</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;2026-04-26 09:00:00 UTC&quot;</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ggplot</span>(big_three, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> receipts_gbp_m <span class="sc">/</span> <span class="dv">1000</span>, <span class="at">colour =</span> description)) <span class="sc">+</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;bn&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK monthly tax receipts&quot;</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;GBP billions&quot;</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>    <span class="at">colour  =</span> <span class="cn">NULL</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Tax Receipts and NICs bulletin&quot;</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>) <span class="sc">+</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>)</span></code></pre></div>
 </div>
 <div id="vat" class="section level2">
 <h2>VAT</h2>
-<p><code>get_vat()</code> covers monthly VAT receipts from April 1973,
+<p><code>hmrc_vat()</code> covers monthly VAT receipts from April 1973,
 broken into payments, repayments, import VAT, and home VAT.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Net VAT: total minus repayments</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>vat <span class="ot">&lt;-</span> <span class="fu">get_vat</span>(<span class="at">measure =</span> <span class="fu">c</span>(<span class="st">&quot;total&quot;</span>, <span class="st">&quot;repayments&quot;</span>), <span class="at">start =</span> <span class="st">&quot;2015-01&quot;</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co"># Repayments are recorded as negative (money flowing out of HMRC)</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="fu">head</span>(vat[vat<span class="sc">$</span>measure <span class="sc">==</span> <span class="st">&quot;repayments&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)])</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Net VAT: total minus repayments</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>vat <span class="ot">&lt;-</span> <span class="fu">hmrc_vat</span>(<span class="at">measure =</span> <span class="fu">c</span>(<span class="st">&quot;total&quot;</span>, <span class="st">&quot;repayments&quot;</span>), <span class="at">start =</span> <span class="st">&quot;2015-01&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># Repayments are recorded as negative (money flowing out of HMRC)</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">head</span>(vat[vat<span class="sc">$</span>measure <span class="sc">==</span> <span class="st">&quot;repayments&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;date&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)])</span></code></pre></div>
 </div>
 <div id="fuel-duties" class="section level2">
 <h2>Fuel duties</h2>
-<p><code>get_fuel_duties()</code> covers monthly hydrocarbon oil duty
+<p><code>hmrc_fuel_duties()</code> covers monthly hydrocarbon oil duty
 receipts from January 1990, broken down into petrol, diesel, other, and
 total.</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>fuel <span class="ot">&lt;-</span> <span class="fu">get_fuel_duties</span>(<span class="at">fuel =</span> <span class="st">&quot;total&quot;</span>, <span class="at">start =</span> <span class="st">&quot;2010-01&quot;</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co"># Annual totals</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>fuel<span class="sc">$</span>year <span class="ot">&lt;-</span> <span class="fu">format</span>(fuel<span class="sc">$</span>date, <span class="st">&quot;%Y&quot;</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">aggregate</span>(receipts_gbp_m <span class="sc">~</span> year, <span class="at">data =</span> fuel, <span class="at">FUN =</span> sum)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>fuel <span class="ot">&lt;-</span> <span class="fu">hmrc_fuel_duties</span>(<span class="at">fuel =</span> <span class="st">&quot;total&quot;</span>, <span class="at">start =</span> <span class="st">&quot;2010-01&quot;</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co"># Annual totals</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>fuel<span class="sc">$</span>year <span class="ot">&lt;-</span> <span class="fu">format</span>(fuel<span class="sc">$</span>date, <span class="st">&quot;%Y&quot;</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">aggregate</span>(receipts_gbp_m <span class="sc">~</span> year, <span class="at">data =</span> fuel, <span class="at">FUN =</span> sum)</span></code></pre></div>
 </div>
 <div id="tobacco-duties" class="section level2">
 <h2>Tobacco duties</h2>
-<p><code>get_tobacco_duties()</code> covers monthly tobacco duty
+<p><code>hmrc_tobacco_duties()</code> covers monthly tobacco duty
 receipts from January 1991, by product: cigarettes, cigars, hand-rolling
 tobacco, other, and total.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>tobacco <span class="ot">&lt;-</span> <span class="fu">get_tobacco_duties</span>(<span class="at">product =</span> <span class="fu">c</span>(<span class="st">&quot;cigarettes&quot;</span>, <span class="st">&quot;hand_rolling&quot;</span>),</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>                              <span class="at">start   =</span> <span class="st">&quot;2015-01&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>tobacco <span class="ot">&lt;-</span> <span class="fu">hmrc_tobacco_duties</span>(<span class="at">product =</span> <span class="fu">c</span>(<span class="st">&quot;cigarettes&quot;</span>, <span class="st">&quot;hand_rolling&quot;</span>),</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>                               <span class="at">start   =</span> <span class="st">&quot;2015-01&quot;</span>)</span></code></pre></div>
 </div>
 <div id="corporation-tax" class="section level2">
 <h2>Corporation Tax</h2>
-<p><code>get_corporation_tax()</code> returns annual Corporation Tax
-receipts broken down by levy type — onshore CT, offshore CT, Bank Levy,
+<p><code>hmrc_corporation_tax()</code> returns annual Corporation Tax
+receipts broken down by levy type: onshore CT, offshore CT, Bank Levy,
 Bank Surcharge, Residential Property Developer Tax (RPDT), Energy
 Profits Levy (EPL), and Electricity Generators Levy (EGL). Covers
 2019-20 to the most recent financial year.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>ct <span class="ot">&lt;-</span> <span class="fu">get_corporation_tax</span>()</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>ct[ct<span class="sc">$</span>type <span class="sc">==</span> <span class="st">&quot;total_ct&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>ct <span class="ot">&lt;-</span> <span class="fu">hmrc_corporation_tax</span>()</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>ct[ct<span class="sc">$</span>type <span class="sc">==</span> <span class="st">&quot;total_ct&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)]</span></code></pre></div>
 </div>
 <div id="stamp-duty" class="section level2">
 <h2>Stamp duty</h2>
-<p><code>get_stamp_duty()</code> returns annual stamp duty receipts by
+<p><code>hmrc_stamp_duty()</code> returns annual stamp duty receipts by
 type from 2003-04: SDLT on property, SDLT on new leases, SDRT on shares,
 and stamp duty on documents.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sd <span class="ot">&lt;-</span> <span class="fu">get_stamp_duty</span>(<span class="at">type =</span> <span class="st">&quot;sdlt_total&quot;</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">tail</span>(sd[, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)], <span class="dv">5</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>sd <span class="ot">&lt;-</span> <span class="fu">hmrc_stamp_duty</span>(<span class="at">type =</span> <span class="st">&quot;sdlt_total&quot;</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">tail</span>(sd[, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;receipts_gbp_m&quot;</span>)], <span class="dv">5</span>)</span></code></pre></div>
 </div>
 <div id="rd-tax-credits" class="section level2">
 <h2>R&amp;D tax credits</h2>
-<p><code>get_rd_credits()</code> returns annual statistics on R&amp;D
+<p><code>hmrc_rd_credits()</code> returns annual statistics on R&amp;D
 tax credit claims and their cost by scheme (SME R&amp;D Relief and RDEC)
 from 2000-01.</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Cost of R&amp;D credits — SME vs RDEC</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>rd <span class="ot">&lt;-</span> <span class="fu">get_rd_credits</span>(<span class="at">measure =</span> <span class="st">&quot;amount_gbp_m&quot;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>rd[rd<span class="sc">$</span>tax_year <span class="sc">==</span> <span class="st">&quot;2023-24&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;scheme&quot;</span>, <span class="st">&quot;description&quot;</span>, <span class="st">&quot;value&quot;</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Cost of R&amp;D credits: SME vs RDEC</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>rd <span class="ot">&lt;-</span> <span class="fu">hmrc_rd_credits</span>(<span class="at">measure =</span> <span class="st">&quot;amount_gbp_m&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>rd[rd<span class="sc">$</span>tax_year <span class="sc">==</span> <span class="st">&quot;2023-24&quot;</span>, <span class="fu">c</span>(<span class="st">&quot;scheme&quot;</span>, <span class="st">&quot;description&quot;</span>, <span class="st">&quot;value&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="capital-gains-tax" class="section level2">
+<h2>Capital Gains Tax</h2>
+<p><code>hmrc_capital_gains()</code> returns annual estimates of CGT
+taxpayers, gains, and tax liabilities from 1987-88 (HMRC CGT Table
+1).</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Total CGT receipts over time</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>cgt <span class="ot">&lt;-</span> <span class="fu">hmrc_capital_gains</span>(<span class="at">measure =</span> <span class="st">&quot;tax_total_gbp_m&quot;</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="fu">tail</span>(cgt[, <span class="fu">c</span>(<span class="st">&quot;tax_year&quot;</span>, <span class="st">&quot;value&quot;</span>)], <span class="dv">6</span>)</span></code></pre></div>
+</div>
+<div id="inheritance-tax" class="section level2">
+<h2>Inheritance Tax</h2>
+<p><code>hmrc_inheritance_tax()</code> returns IHT estate counts, tax
+due, average tax, and effective tax rates by net-estate band for the
+latest published year of death (HMRC IHT Table 12.1a). The publication
+carries a roughly three-year administrative lag.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>iht <span class="ot">&lt;-</span> <span class="fu">hmrc_inheritance_tax</span>()</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>iht[iht<span class="sc">$</span>measure <span class="sc">==</span> <span class="st">&quot;number_taxed&quot;</span> <span class="sc">&amp;</span> iht<span class="sc">$</span>estate_band <span class="sc">!=</span> <span class="st">&quot;Total&quot;</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;estate_band&quot;</span>, <span class="st">&quot;value&quot;</span>)]</span></code></pre></div>
+</div>
+<div id="patent-box" class="section level2">
+<h2>Patent Box</h2>
+<p><code>hmrc_patent_box()</code> returns the annual count of companies
+electing into the Patent Box and total relief claimed (HMRC Patent Box
+Table 1) from 2013-14 onwards.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">hmrc_patent_box</span>()</span></code></pre></div>
+</div>
+<div id="creative-industries-reliefs" class="section level2">
+<h2>Creative Industries reliefs</h2>
+<p><code>hmrc_creative_industries()</code> returns annual reliefs across
+the eight creative industries reliefs (film, high-end TV, animation,
+children’s TV, video games, theatre, orchestra, museums and
+galleries).</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Film tax relief over time</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="fu">hmrc_creative_industries</span>(<span class="at">sector =</span> <span class="st">&quot;film&quot;</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co"># All eight sectors in the latest year</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="fu">hmrc_creative_industries</span>(<span class="at">tax_year =</span> <span class="st">&quot;2023-24&quot;</span>)</span></code></pre></div>
 </div>
 <div id="tax-gap" class="section level2">
 <h2>Tax gap</h2>
-<p><code>get_tax_gap()</code> returns the most recent cross-sectional
+<p><code>hmrc_tax_gap()</code> returns the most recent cross-sectional
 tax gap estimates, broken down by tax type, taxpayer group, and
 behaviour component (evasion, error, avoidance, etc.).</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>gap <span class="ot">&lt;-</span> <span class="fu">get_tax_gap</span>()</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># Sort by absolute gap</span></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>gap[<span class="fu">order</span>(<span class="sc">-</span>gap<span class="sc">$</span>gap_gbp_bn),</span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;tax&quot;</span>, <span class="st">&quot;component&quot;</span>, <span class="st">&quot;gap_gbp_bn&quot;</span>, <span class="st">&quot;uncertainty&quot;</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a>gap <span class="ot">&lt;-</span> <span class="fu">hmrc_tax_gap</span>()</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="co"># Sort by absolute gap</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>gap[<span class="fu">order</span>(<span class="sc">-</span>gap<span class="sc">$</span>gap_gbp_bn),</span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>    <span class="fu">c</span>(<span class="st">&quot;tax&quot;</span>, <span class="st">&quot;component&quot;</span>, <span class="st">&quot;gap_gbp_bn&quot;</span>, <span class="st">&quot;uncertainty&quot;</span>)]</span></code></pre></div>
 </div>
 <div id="income-tax-liabilities" class="section level2">
 <h2>Income Tax liabilities</h2>
-<p><code>get_income_tax_stats()</code> returns annual Income Tax
+<p><code>hmrc_income_tax_stats()</code> returns annual Income Tax
 liabilities by income range (HMRC Table 2.5), including taxpayer counts,
 total income, tax liabilities, and average tax rates.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>it <span class="ot">&lt;-</span> <span class="fu">get_income_tax_stats</span>(<span class="at">tax_year =</span> <span class="st">&quot;2023-24&quot;</span>)</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>it[, <span class="fu">c</span>(<span class="st">&quot;income_range&quot;</span>, <span class="st">&quot;taxpayers_thousands&quot;</span>, <span class="st">&quot;tax_liability_gbp_m&quot;</span>, <span class="st">&quot;average_rate_pct&quot;</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>it <span class="ot">&lt;-</span> <span class="fu">hmrc_income_tax_stats</span>(<span class="at">tax_year =</span> <span class="st">&quot;2023-24&quot;</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>it[, <span class="fu">c</span>(<span class="st">&quot;income_range&quot;</span>, <span class="st">&quot;taxpayers_thousands&quot;</span>, <span class="st">&quot;tax_liability_gbp_m&quot;</span>, <span class="st">&quot;average_rate_pct&quot;</span>)]</span></code></pre></div>
 </div>
 <div id="property-transactions" class="section level2">
 <h2>Property transactions</h2>
-<p><code>get_property_transactions()</code> returns monthly counts of
+<p><code>hmrc_property_transactions()</code> returns monthly counts of
 residential and non-residential property transactions by UK nation from
 April 2005.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>prop <span class="ot">&lt;-</span> <span class="fu">get_property_transactions</span>(</span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">type   =</span> <span class="st">&quot;residential&quot;</span>,</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  <span class="at">nation =</span> <span class="st">&quot;uk&quot;</span>,</span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  <span class="at">start  =</span> <span class="st">&quot;2018-01&quot;</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>)</span></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">ggplot</span>(prop, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> transactions <span class="sc">/</span> <span class="dv">1000</span>)) <span class="sc">+</span></span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#3B82F6&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;k&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK residential property transactions&quot;</span>,</span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;Transactions (thousands)&quot;</span>,</span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Monthly Property Transactions bulletin&quot;</span></span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>prop <span class="ot">&lt;-</span> <span class="fu">hmrc_property_transactions</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  <span class="at">type   =</span> <span class="st">&quot;residential&quot;</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  <span class="at">nation =</span> <span class="st">&quot;uk&quot;</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>  <span class="at">start  =</span> <span class="st">&quot;2018-01&quot;</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">ggplot</span>(prop, <span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> transactions <span class="sc">/</span> <span class="dv">1000</span>)) <span class="sc">+</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">&quot;#3B82F6&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_comma</span>(<span class="at">suffix =</span> <span class="st">&quot;k&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>    <span class="at">title   =</span> <span class="st">&quot;UK residential property transactions&quot;</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>    <span class="at">x       =</span> <span class="cn">NULL</span>,</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>    <span class="at">y       =</span> <span class="st">&quot;Transactions (thousands)&quot;</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Source: HMRC Monthly Property Transactions bulletin&quot;</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">12</span>)</span></code></pre></div>
 </div>
 <div id="caching" class="section level2">
 <h2>Caching</h2>
 <p>All downloads are cached locally in your user cache directory.
 Subsequent calls return the cached file instantly with no network
 request.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Remove files older than 30 days</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">clear_cache</span>(<span class="at">max_age_days =</span> <span class="dv">30</span>)</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co"># Remove everything and start fresh</span></span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">clear_cache</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># Inspect the cache</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="fu">hmrc_cache_info</span>()</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="co"># Remove files older than 30 days</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="fu">hmrc_clear_cache</span>(<span class="at">max_age_days =</span> <span class="dv">30</span>)</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co"># Remove everything and start fresh</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="fu">hmrc_clear_cache</span>()</span></code></pre></div>
 </div>
 
 

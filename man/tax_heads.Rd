@@ -8,7 +8,7 @@
 A data frame with 41 rows and 4 columns:
 \describe{
 \item{tax_head}{Character. Identifier used in the \code{tax} argument of
-\code{\link[=get_tax_receipts]{get_tax_receipts()}}.}
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}}.}
 \item{description}{Character. Plain-English description.}
 \item{category}{Character. Broad grouping: \code{"income"}, \code{"nics"},
 \code{"consumption"}, \code{"property"}, \code{"environment"}, \code{"expenditure"},
@@ -25,6 +25,6 @@ tax_heads
 }
 \description{
 A data frame describing all tax and duty series available in
-\code{\link[=get_tax_receipts]{get_tax_receipts()}}.
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}}.
 }
 \keyword{datasets}
