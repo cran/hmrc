@@ -12,9 +12,9 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_clear_cache()
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
 #' hmrc_clear_cache(max_age_days = 30)
+#' hmrc_clear_cache()
 #' options(op)
 #' }
 #'
@@ -30,7 +30,7 @@ hmrc_clear_cache <- function(max_age_days = NULL) {
   cache_dir <- hmrc_cache_dir()
 
   if (!dir.exists(cache_dir)) {
-    cli::cli_inform("No cache directory found \u2014 nothing to clear.")
+    cli::cli_inform("No cache directory found, so there is nothing to clear.")
     return(invisible(0L))
   }
 

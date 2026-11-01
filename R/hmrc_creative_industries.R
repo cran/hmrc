@@ -4,12 +4,14 @@
 #' Industries Statistics for each of the eight creative-industries reliefs:
 #' Film, High-end TV, Animation, Children's TV, Video Games, Theatre,
 #' Orchestra, and Museums and Galleries Exhibition. Published annually
-#' each August.
+#' in August or September.
 #'
 #' @param sector Character vector or `NULL` (default = all sectors).
 #'   Valid values: `"film"`, `"high_end_tv"`, `"animation"`,
 #'   `"childrens_tv"`, `"video_games"`, `"theatre"`, `"orchestra"`,
-#'   `"museum"`.
+#'   `"museum"`. Any relief HMRC adds to the release later as its own
+#'   `Table_1_*` sheet is included when `sector = NULL`, keyed by a
+#'   snake_case version of its sheet name.
 #' @param tax_year Character vector or `NULL` (default = all years).
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
@@ -19,8 +21,8 @@
 #'     \item{tax_year}{Character. Tax year, e.g. `"2023-24"`.}
 #'     \item{companies}{Numeric. Number of companies (where reported).}
 #'     \item{claims}{Numeric. Number of claims (where reported).}
-#'     \item{productions}{Numeric. Number of productions (films, games,
-#'       etc., where reported).}
+#'     \item{productions}{Numeric. Number of productions (films,
+#'       programmes, games, exhibitions, etc., where reported).}
 #'     \item{relief_gbp_m}{Numeric. Amount of relief paid, GBP million.}
 #'     \item{status}{Character. HMRC revision status (e.g. `"Unchanged"`,
 #'       `"Provisional"`).}
@@ -35,14 +37,24 @@
 #' `claims`/`productions`, museums track exhibitions, etc.); columns absent
 #' from a sector's table are returned as `NA`.
 #'
+#' From the September 2026 edition the film, TV, animation and video games
+#' tables report the legacy tax relief alongside the expenditure credits that
+#' replace it: the Audio-Visual Expenditure Credit (AVEC), the Independent
+#' Film Tax Credit (IFTC) and the Video Games Expenditure Credit (VGEC). For
+#' those sectors this function returns HMRC's "total" columns, which cover
+#' the legacy relief and the credits together and are the columns HMRC says
+#' to use when comparing years. The split by relief type is not returned.
+#'
 #' @source
 #' <https://www.gov.uk/government/collections/creative-industries-statistics>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_creative_industries(sector = "film")
-#' hmrc_creative_industries(tax_year = "2023-24")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   film <- hmrc_creative_industries(sector = "film")
+#'   tail(film)
+#' })
 #' options(op)
 #' }
 #'
@@ -92,7 +104,7 @@ hmrc_creative_industries <- function(sector   = NULL,
   cli::cli_progress_step("Parsing data")
   out <- parse_creative_industries(path)
 
-  if (!is.null(sector))   out <- out[out$sector   %in% sector,   ]
+  if (!is.null(sector)) out <- out[out$sector %in% sector, ]
   if (!is.null(tax_year)) out <- out[out$tax_year %in% tax_year, ]
   rownames(out) <- NULL
 
@@ -105,12 +117,13 @@ hmrc_creative_industries <- function(sector   = NULL,
     source_url       = loc$page_url,
     attachment_url   = loc$attachment_url,
     slug             = loc$slug,
-    cell_methods     = "counts/cash",
-    frequency        = "annual"
+    cell_methods     = "accruals",
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 
 CREATIVE_SECTOR_SHEETS <- c(
   film         = "Table_1_Film",
@@ -123,90 +136,88 @@ CREATIVE_SECTOR_SHEETS <- c(
   museum       = "Table_1_Museum"
 )
 
-CREATIVE_HEADER_PATTERNS <- list(
-  companies   = "number of companies",
-  claims      = "number of claims",
-  productions = "number of (films|games|productions|exhibitions|tours|orchestral concerts|theatrical productions)",
-  relief_gbp_m= "amount of relief",
-  status      = "^status$"
+CREATIVE_COLS <- c(
+  companies    = "^number of companies",
+  claims       = "^number of claims",
+  productions  = "^number of (films|programmes|games|productions|exhibitions|tours|orchestral concerts|theatrical productions|concerts)",
+  relief_gbp_m = "^amount of relief",
+  status       = "^status$"
 )
 
 parse_creative_industries <- function(path) {
+  pub <- "Creative Industries statistics"
   available <- readODS::list_ods_sheets(path)
 
+  # Known sectors keep their keys; any other "Table_1_*" sheet is a relief
+  # HMRC has added since, keyed from its sheet name.
+  extra  <- setdiff(grep("^Table_1_", available, value = TRUE), CREATIVE_SECTOR_SHEETS)
+  sheets <- c(CREATIVE_SECTOR_SHEETS[CREATIVE_SECTOR_SHEETS %in% available],
+              stats_names(extra, snake_case(sub("^Table_1_", "", extra))))
+
   results <- list()
-  for (sec in names(CREATIVE_SECTOR_SHEETS)) {
-    sheet <- CREATIVE_SECTOR_SHEETS[[sec]]
-    if (!sheet %in% available) next
+  for (sec in names(sheets)) {
+    raw <- read_sheet_raw(path, sheets[[sec]], pub)
 
-    raw <- readODS::read_ods(path, sheet = sheet,
-                             col_names = FALSE, as_tibble = FALSE)
+    hdr <- find_row(raw, "^year$")[1]
+    if (is.na(hdr)) next
+    idx <- match_columns(creative_total_header(unlist(raw[hdr, ])),
+                         CREATIVE_COLS, pub,
+                         optional = c("companies", "claims", "productions", "status"))
 
-    # Header row: col 1 == "Year"
-    hdr_row <- NA_integer_
-    for (i in seq_len(nrow(raw))) {
-      cell <- trimws(as.character(raw[i, 1]))
-      if (identical(tolower(cell), "year")) {
-        hdr_row <- i
-        break
-      }
+    years <- parse_tax_year(raw[[1]])
+    rows  <- which(!is.na(years) & seq_along(years) > hdr)
+    if (length(rows) == 0L) next
+
+    take_num <- function(key) {
+      if (is.na(idx[[key]])) return(rep(NA_real_, length(rows)))
+      parse_num(raw[[idx[[key]]]][rows])
     }
-    if (is.na(hdr_row)) next
-
-    header_row <- tolower(trimws(as.character(unlist(raw[hdr_row, ]))))
-    data_rows  <- raw[(hdr_row + 1L):nrow(raw), ]
-
-    yr_raw    <- trimws(as.character(data_rows[[1]]))
-    is_year   <- grepl("^\\d{4}-\\d{2}$", yr_raw)
-    data_rows <- data_rows[is_year, ]
-    yr_raw    <- yr_raw[is_year]
-    if (length(yr_raw) == 0L) next
-
-    parse_num <- function(x) {
-      x <- gsub(",", "", trimws(as.character(x)))
-      x[grepl("\\[", x)] <- NA_character_
-      suppressWarnings(as.numeric(x))
-    }
-
-    pick_col <- function(pattern) {
-      idx <- which(grepl(pattern, header_row, perl = TRUE))
-      if (length(idx) == 0L) return(NA_integer_)
-      idx[[1L]]
-    }
-
-    col_companies   <- pick_col(CREATIVE_HEADER_PATTERNS$companies)
-    col_claims      <- pick_col(CREATIVE_HEADER_PATTERNS$claims)
-    col_productions <- pick_col(CREATIVE_HEADER_PATTERNS$productions)
-    col_relief      <- pick_col(CREATIVE_HEADER_PATTERNS$relief_gbp_m)
-    col_status      <- pick_col(CREATIVE_HEADER_PATTERNS$status)
-
-    take_num <- function(idx) {
-      if (is.na(idx) || idx > ncol(data_rows)) return(rep(NA_real_, nrow(data_rows)))
-      parse_num(data_rows[[idx]])
-    }
-    take_chr <- function(idx) {
-      if (is.na(idx) || idx > ncol(data_rows)) return(rep(NA_character_, nrow(data_rows)))
-      trimws(as.character(data_rows[[idx]]))
+    status <- if (is.na(idx[["status"]])) {
+      rep(NA_character_, length(rows))
+    } else {
+      trimws(as.character(raw[[idx[["status"]]]][rows]))
     }
 
     results[[length(results) + 1L]] <- data.frame(
       sector       = sec,
-      tax_year     = yr_raw,
-      companies    = take_num(col_companies),
-      claims       = take_num(col_claims),
-      productions  = take_num(col_productions),
-      relief_gbp_m = take_num(col_relief),
-      status       = take_chr(col_status),
+      tax_year     = years[rows],
+      companies    = take_num("companies"),
+      claims       = take_num("claims"),
+      productions  = take_num("productions"),
+      relief_gbp_m = take_num("relief_gbp_m"),
+      status       = status,
       stringsAsFactors = FALSE
     )
   }
 
   if (length(results) == 0L) {
-    cli::cli_abort("No Creative Industries sector tables parsed. Please file an issue.")
+    abort_schema(pub, "any sector tables",
+                 found = paste(available, collapse = ", "))
   }
 
   out <- do.call(rbind, results)
   out <- out[order(out$sector, out$tax_year), ]
   rownames(out) <- NULL
   out
+}
+
+#' Keep only the all-reliefs columns where a sheet splits by relief type
+#'
+#' Sheets that carry an expenditure credit repeat each measure per relief
+#' ("Number of companies: tax relief", "...: AVEC", "...: total"). The
+#' "total" columns are the comparable series, so the per-relief columns are
+#' blanked before matching. Sheets without a split are returned unchanged.
+#' @noRd
+creative_total_header <- function(header) {
+  h <- clean_header(header)
+  if (!any(grepl(":\\s*total$", h, ignore.case = TRUE))) return(h)
+  h[grepl(":", h, fixed = TRUE) & !grepl(":\\s*total$", h, ignore.case = TRUE)] <- ""
+  h
+}
+
+#' Name a character vector (base equivalent of stats::setNames)
+#' @noRd
+stats_names <- function(x, nm) {
+  names(x) <- nm
+  x
 }

@@ -18,7 +18,8 @@ specific tax years, e.g. \code{"2023-24"}.}
 \value{
 An \code{hmrc_tbl} with columns \code{tax_year}, \code{income_range},
 \code{income_lower_gbp}, \code{taxpayers_thousands}, \code{total_income_gbp_m},
-\code{tax_liability_gbp_m}, \code{average_rate_pct}, \code{average_tax_gbp}.
+\code{tax_liability_gbp_m}, \code{average_rate_pct} (in per cent),
+\code{average_tax_gbp}, and \code{estimate} (\code{"outturn"} or \code{"projection"}).
 }
 \description{
 Downloads and tidies HMRC Table 2.5, which reports the number of Income Tax
@@ -27,33 +28,36 @@ available tax year. Numbers of taxpayers are in thousands; amounts are in
 millions of pounds unless otherwise noted. Published annually in May/June.
 }
 \details{
-The earliest tax year with outturn data is based on the Survey of Personal
-Incomes; later years are projected estimates. Values suppressed for small
-sample sizes are returned as \code{NA}.
+The earliest tax year is outturn from the Survey of Personal Incomes;
+later years are HMRC projections from that survey. The \code{estimate}
+column marks which is which. Values suppressed for small sample sizes
+are returned as \code{NA}.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_income_tax_stats()
-hmrc_income_tax_stats(tax_year = "2023-24")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  it <- hmrc_income_tax_stats()
+  it[it$income_range == "All Ranges", ]
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

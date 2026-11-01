@@ -38,27 +38,29 @@ payments and repayments rather than the import VAT column.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_vat(measure = "total", start = "2010-01")
-hmrc_vat(start = "2020-01")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  vat <- hmrc_vat(measure = c("total", "repayments"), start = "2024-01")
+  head(vat)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}}
 }
 \concept{data fetchers}

@@ -17,25 +17,28 @@
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
 #' @return An `hmrc_tbl` (long format) with columns `tax_year`, `measure`,
-#'   `value`. Numbers of taxpayers are in thousands; amounts in millions
-#'   of pounds; percentages in percent. Suppressed cells return `NA`.
+#'   `value`, and `status` (`"provisional"` for the years HMRC marks as
+#'   provisional, otherwise `NA`). Numbers of taxpayers are in thousands;
+#'   amounts in millions of pounds; percentages in per cent. Suppressed
+#'   cells return `NA`.
 #'
 #' @details
 #' Gains are after the deduction of taper relief and losses plus attributed
 #' gains, but before deduction of the Annual Exempt Amount. Trusts include
-#' personal representatives of the deceased. Statistics for the latest two
-#' tax years are provisional and are revised in subsequent publications as
-#' late returns arrive.
+#' personal representatives of the deceased. Statistics for the latest tax
+#' years are provisional and are revised in subsequent publications as late
+#' returns arrive.
 #'
 #' @source
-#' <https://www.gov.uk/government/organisations/hm-revenue-customs/series/capital-gains-tax-statistics>
+#' <https://www.gov.uk/government/statistics/capital-gains-tax-statistics>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_capital_gains()
-#' hmrc_capital_gains(measure = "tax_total_gbp_m")
-#' hmrc_capital_gains(tax_year = "2022-23")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   cgt <- hmrc_capital_gains(measure = "tax_total_gbp_m")
+#'   tail(cgt)
+#' })
 #' options(op)
 #' }
 #'
@@ -86,90 +89,70 @@ hmrc_capital_gains <- function(tax_year = NULL,
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "liabilities",
-    frequency        = "annual"
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 #
-# CGT Table 1 layout (HMRC publication, July release):
-#   Row 8 = column headers
-#   Row 9+ = data, one row per tax year (e.g. "1987 to 1988")
-#   Col 1: Year of disposal
-#   Cols 2-12: 11 measures (taxpayers, gains, tax for individuals / trusts /
-#              total; plus males/females percentages)
-# Suppressed cells hold "[Unavailable]" or similar text and become NA.
+# CGT Table 1: one row per year of disposal ("1987 to 1988", with "[Note n]"
+# markers on some years) under a "Year of disposal" header row. Columns are
+# matched by header text. Suppressed cells ("[Unavailable]") become NA.
 
 CGT_T1_COLS <- c(
-  taxpayers_individuals_thousands = "Number of individuals",
-  males_pct                       = "Males as %",
-  females_pct                     = "Females as %",
-  gains_individuals_gbp_m         = "Amounts of gains for individuals",
-  tax_individuals_gbp_m           = "Amounts of tax for individuals",
-  taxpayers_trusts_thousands      = "Number of trusts",
-  gains_trusts_gbp_m              = "Amounts of gains for trusts",
-  tax_trusts_gbp_m                = "Amounts of tax for trusts",
-  taxpayers_total_thousands       = "Total taxpayers",
-  gains_total_gbp_m               = "Total amounts of gains",
-  tax_total_gbp_m                 = "Total amounts of tax"
+  taxpayers_individuals_thousands = "^number of individuals",
+  males_pct                       = "^males as",
+  females_pct                     = "^females as",
+  gains_individuals_gbp_m         = "^amounts? of gains for individuals",
+  tax_individuals_gbp_m           = "^amounts? of tax for individuals",
+  taxpayers_trusts_thousands      = "^number of trusts",
+  gains_trusts_gbp_m              = "^amounts? of gains for trusts",
+  tax_trusts_gbp_m                = "^amounts? of tax for trusts",
+  taxpayers_total_thousands       = "^total taxpayers",
+  gains_total_gbp_m               = "^total amounts? of gains",
+  tax_total_gbp_m                 = "^total amounts? of tax"
 )
 
 parse_cgt_table1 <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "Table_1",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "Capital Gains Tax statistics"
+  raw <- read_sheet_raw(path, "Table_1", pub)
 
-  # Find the row with "Year of disposal" anchor (header row)
-  hdr_row <- NA_integer_
-  for (i in seq_len(nrow(raw))) {
-    cell <- trimws(as.character(raw[i, 1]))
-    if (identical(tolower(cell), "year of disposal")) {
-      hdr_row <- i
-      break
-    }
-  }
-  if (is.na(hdr_row)) {
-    cli::cli_abort("Could not locate header row in CGT Table 1. Please file an issue.")
-  }
+  hdr <- find_row(raw, "^year of disposal$")[1]
+  if (is.na(hdr)) abort_schema(pub, "the Table 1 header row")
+  idx <- match_columns(unlist(raw[hdr, ]), CGT_T1_COLS, pub)
 
-  data_rows <- raw[(hdr_row + 1L):nrow(raw), ]
+  years <- parse_tax_year(raw[[1]])
+  rows  <- which(!is.na(years) & seq_along(years) > hdr)
+  if (length(rows) == 0L) abort_schema(pub, "any year-of-disposal rows")
 
-  # Tax year is in col 1: "1987 to 1988" -> "1987-88"
-  yr_raw <- trimws(as.character(data_rows[[1]]))
-  # Strip "[Note ...]" footnote markers
-  yr_raw <- trimws(gsub("\\[Note[^\\]]*\\]", "", yr_raw))
-  is_year <- grepl("^\\d{4}\\s+to\\s+\\d{4}$", yr_raw)
-  data_rows <- data_rows[is_year, ]
-  yr_raw    <- yr_raw[is_year]
-
-  to_yyyy_yy <- function(x) {
-    parts <- regmatches(x, gregexpr("\\d{4}", x))
-    vapply(parts, function(p) {
-      if (length(p) >= 2L) paste0(p[1], "-", substr(p[2], 3, 4)) else NA_character_
-    }, character(1))
-  }
-  tax_years <- to_yyyy_yy(yr_raw)
-
-  parse_num <- function(x) {
-    x <- gsub(",", "", trimws(as.character(x)))
-    x[grepl("\\[", x)] <- NA_character_
-    suppressWarnings(as.numeric(x))
+  first_prov <- cgt_first_provisional_year(raw[seq_len(hdr - 1L), , drop = FALSE])
+  status <- if (is.na(first_prov)) {
+    rep(NA_character_, length(rows))
+  } else {
+    ifelse(years[rows] >= first_prov, "provisional", NA_character_)
   }
 
-  results <- list()
-  measure_keys <- names(CGT_T1_COLS)
-  for (j in seq_along(measure_keys)) {
-    col_idx <- j + 1L
-    if (col_idx > ncol(data_rows)) break
-    results[[j]] <- data.frame(
-      tax_year = tax_years,
-      measure  = measure_keys[j],
-      value    = parse_num(data_rows[[col_idx]]),
+  out <- do.call(rbind, lapply(names(CGT_T1_COLS), function(k) {
+    data.frame(
+      tax_year = years[rows],
+      measure  = k,
+      value    = parse_num(raw[[idx[[k]]]][rows]),
+      status   = status,
       stringsAsFactors = FALSE
     )
-  }
-
-  out <- do.call(rbind, results)
+  }))
   out <- out[order(out$measure, out$tax_year), ]
   rownames(out) <- NULL
   out
+}
+
+#' First provisional year from the note "The statistics for tax years 2022 to
+#' 2023 onwards are provisional."; NA if there is no such note.
+#' @noRd
+cgt_first_provisional_year <- function(notes) {
+  txt <- paste(unlist(notes), collapse = " ")
+  m <- regmatches(txt, regexpr("\\d{4} to \\d{4} onwards are provisional", txt))
+  if (length(m) == 0L) return(NA_character_)
+  parse_tax_year(sub(" onwards are provisional", "", m))
 }

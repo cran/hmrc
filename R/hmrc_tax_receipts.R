@@ -2,8 +2,9 @@
 #'
 #' Downloads and tidies the monthly HMRC Tax Receipts and National Insurance
 #' Contributions bulletin published on GOV.UK. The bulletin covers all major
-#' UK taxes and duties from April 2008 to the most recent month (monthly
-#' granularity), updated on approximately the 15th working day of each month.
+#' UK taxes and duties at monthly frequency and is updated on approximately
+#' the 15th working day of each month. HMRC's monthly table is a rolling
+#' window: it currently starts in April 2017.
 #'
 #' @param tax Character vector of tax head identifiers, or `NULL` (default)
 #'   to return all available series. Use [hmrc_list_tax_heads()] to see valid
@@ -27,16 +28,24 @@
 #'   Provenance metadata (source URL, fetch time, vintage) is attached as
 #'   the `"hmrc_meta"` attribute and can be inspected with [hmrc_meta()].
 #'
+#' @details
+#' Months with no receipts for a head (for example Bank Levy outside its
+#' instalment months) are marked `[X]` by HMRC and returned as `NA`. If HMRC
+#' adds a new series to the bulletin (Vaping Products Duty is due from
+#' October 2026), it is returned under a snake_case `tax_head` built from its
+#' column label, with a one-off message, until the package adds it to
+#' [hmrc_list_tax_heads()].
+#'
 #' @source
 #' <https://www.gov.uk/government/statistics/hmrc-tax-and-nics-receipts-for-the-uk>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_tax_receipts()
-#' hmrc_tax_receipts(tax = c("income_tax", "vat"))
-#' hmrc_tax_receipts(start = "2020-04")
-#' hmrc_tax_receipts(tax = "vat", start = "2019-01", end = "2024-12")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   tr <- hmrc_tax_receipts(tax = c("income_tax", "vat"), start = "2025-04")
+#'   head(tr)
+#' })
 #' options(op)
 #' }
 #'
@@ -65,6 +74,10 @@ hmrc_tax_receipts <- function(tax = NULL, start = NULL, end = NULL, cache = TRUE
   raw <- parse_ns_table(path)
 
   if (!is.null(tax)) {
+    absent <- setdiff(tax, unique(raw$tax_head))
+    if (length(absent) > 0) {
+      cli::cli_warn("Not in the current bulletin: {.val {absent}}")
+    }
     raw <- raw[raw$tax_head %in% tax, ]
   }
   raw <- filter_dates(raw, start, end)
@@ -80,15 +93,17 @@ hmrc_tax_receipts <- function(tax = NULL, start = NULL, end = NULL, cache = TRUE
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "cash",
-    frequency        = "monthly"
+    frequency        = "monthly",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal: parse the NS_Table.ods ──────────────────────────────────────────
+# -- Internal: parse the NS_Table.ods -------------------------------------------
 
-# Column header label → snake_case identifier mapping
-# Only top-level series (no "(included within ...)" sub-components)
+# Column header label -> snake_case identifier. Sub-components marked
+# "(included within ...)" are skipped so heads do not double count.
 NS_COL_MAP <- c(
+  "Total Paid Over"                   = "total_paid_over",
   "Total HMRC Receipts"               = "total_receipts",
   "Income Tax"                        = "income_tax",
   "Capital Gains Tax"                 = "capital_gains_tax",
@@ -106,6 +121,7 @@ NS_COL_MAP <- c(
   "Residential Property Developer Tax"= "residential_property_developer_tax",
   "Energy Profits Levy"               = "energy_profits_levy",
   "Electricity Generators Levy"       = "electricity_generators_levy",
+  "Electricity Generator Levy"        = "electricity_generators_levy",
   "Economic Crime Levy"               = "economic_crime_levy",
   "Bank payroll tax"                  = "bank_payroll_tax",
   "Petroleum Revenue Tax"             = "petroleum_revenue_tax",
@@ -132,44 +148,50 @@ NS_COL_MAP <- c(
   "Penalties"                         = "penalties"
 )
 
+# Columns HMRC still prints but that hold no data in the current window.
+NS_SKIP <- c("Swiss Capital Tax")
+
 parse_ns_table <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "Receipts_Monthly",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "HMRC tax receipts and NICs bulletin"
+  raw <- read_sheet_raw(path, "Receipts_Monthly", pub)
+  blk <- read_monthly_block(raw, pub)
+  hdr <- clean_header(blk$header)
 
-  header_row <- as.character(unlist(raw[6, ]))
-  data_rows  <- raw[7:nrow(raw), ]
-
-  dates_raw <- trimws(as.character(data_rows[[1]]))
-  dates     <- suppressWarnings(
-    as.Date(paste0("01 ", dates_raw), format = "%d %B %Y")
-  )
-
-  valid     <- !is.na(dates)
-  dates     <- dates[valid]
-  data_rows <- data_rows[valid, ]
+  known <- unname(NS_COL_MAP)
+  names(known) <- tolower(names(NS_COL_MAP))
+  skip  <- tolower(NS_SKIP)
 
   results <- list()
+  for (j in seq_along(hdr)[-1L]) {
+    h <- hdr[j]
+    if (!nzchar(h)) next
+    if (grepl("included within", h, ignore.case = TRUE)) next
+    if (tolower(h) %in% skip) next
 
-  for (j in seq_along(header_row)) {
-    hdr <- trimws(header_row[j])
-    if (j == 1) next
-    if (grepl("included within", hdr, ignore.case = TRUE)) next
-    if (!hdr %in% names(NS_COL_MAP)) next
+    key <- known[tolower(h)]
+    if (is.na(key)) {
+      key  <- snake_case(h)
+      desc <- h
+      cli::cli_inform(
+        c("i" = "New series in the HMRC receipts bulletin: {.val {h}}, returned as tax_head {.val {key}}."),
+        .frequency = "once", .frequency_id = paste0("hmrc_ns_new_", key)
+      )
+    } else {
+      key  <- unname(key)
+      desc <- tax_heads$description[match(key, tax_heads$tax_head)]
+      if (is.na(desc)) desc <- h
+    }
 
-    key  <- NS_COL_MAP[[hdr]]
-    desc <- tax_heads$description[match(key, tax_heads$tax_head)]
-    if (is.na(desc)) desc <- hdr
-
-    vals <- suppressWarnings(as.numeric(as.character(data_rows[[j]])))
-
-    results[[length(results) + 1]] <- data.frame(
-      date           = dates,
+    results[[length(results) + 1L]] <- data.frame(
+      date           = blk$dates,
       tax_head       = key,
       description    = desc,
-      receipts_gbp_m = vals,
+      receipts_gbp_m = parse_num(raw[[j]][blk$rows]),
       stringsAsFactors = FALSE
     )
   }
+
+  if (length(results) == 0L) abort_schema(pub, "any tax head columns")
 
   out <- do.call(rbind, results)
   out <- out[order(out$tax_head, out$date), ]

@@ -1,4 +1,4 @@
-# deprec.R — backwards-compatible aliases for the pre-0.4.0 `get_*` API.
+# deprec.R: backwards-compatible aliases for the pre-0.4.0 `get_*` API.
 #
 # The package adopted the `hmrc_*` prefix in v0.4.0 to align with sibling
 # packages (boe, fred, ons, obr). The old `get_*` names are kept as thin

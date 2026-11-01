@@ -12,7 +12,7 @@ hmrc_stamp_duty(type = NULL, cache = TRUE)
 \arguments{
 \item{type}{Character vector or \code{NULL} (default = all types).
 Valid values: \code{"sdlt_property"}, \code{"sdlt_leases"}, \code{"sdlt_total"},
-\code{"sdrt"}, \code{"stamp_duty"}, \code{"total"}.}
+\code{"sdrt"}, \code{"stamp_duty"}, \code{"shares_total"}, \code{"total"}.}
 
 \item{cache}{Logical. Use cached file if available (default \code{TRUE}).}
 }
@@ -26,29 +26,38 @@ Stamp Duty Land Tax (SDLT), Stamp Duty Reserve Tax (SDRT) on shares,
 and other stamp duties. Annual data from 2003-04 to the most recent
 financial year, published each December.
 }
+\details{
+\code{sdlt_total} is SDLT on all property; \code{shares_total} is Stamp Duty
+Reserve Tax plus Stamp Duty on share documents; \code{total} is all stamp
+taxes. Land transaction taxes were devolved to Scotland (LBTT) in April
+2015 and Wales (LTT) in April 2018, so SDLT after those dates covers
+England and Northern Ireland only.
+}
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_stamp_duty()
-hmrc_stamp_duty(type = "sdlt_total")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  sd <- hmrc_stamp_duty(type = c("sdlt_total", "total"))
+  tail(sd)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

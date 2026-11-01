@@ -14,24 +14,27 @@ A named list, or \code{NULL} if \code{x} has no metadata.
 }
 \description{
 Returns the provenance list attached to a result from any \verb{hmrc_*} data
-fetcher: source URL, fetch time, vintage, cell methods, and so on. Useful
-for citation, audit trails, and reproducibility.
+fetcher: source URL, attachment URL, the GOV.UK publication timestamp of
+the edition (\code{published_at}), fetch time, vintage, cell methods, and so
+on. Useful for citation, audit trails, and reproducibility.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-tr <- hmrc_tax_receipts(tax = "vat", start = "2024-01")
-hmrc_meta(tr)
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  tr <- hmrc_tax_receipts(tax = "vat", start = "2024-01")
+  hmrc_meta(tr)
+})
 options(op)
 }
 
 }
 \seealso{
-Other infrastructure: 
-\code{\link{hmrc_cache_info}()},
-\code{\link{hmrc_clear_cache}()},
-\code{\link{hmrc_list_tax_heads}()},
-\code{\link{hmrc_publications}()},
-\code{\link{hmrc_search}()}
+Other infrastructure:
+\code{\link[=hmrc_cache_info]{hmrc_cache_info()}},
+\code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}},
+\code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}},
+\code{\link[=hmrc_publications]{hmrc_publications()}},
+\code{\link[=hmrc_search]{hmrc_search()}}
 }
 \concept{infrastructure}

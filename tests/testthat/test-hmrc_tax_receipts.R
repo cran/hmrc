@@ -41,6 +41,7 @@ test_that("hmrc_tax_receipts() returns expected structure with provenance", {
   expect_equal(m$cell_methods, "cash")
   expect_equal(m$frequency, "monthly")
   expect_match(m$source_url, "hmrc-tax-and-nics-receipts")
+  expect_s3_class(m$published_at, "POSIXct")
 })
 
 test_that("hmrc_tax_receipts() date range filtering works", {
@@ -50,6 +51,20 @@ test_that("hmrc_tax_receipts() date range filtering works", {
   out <- hmrc_tax_receipts(tax = "income_tax", start = "2022-01", end = "2022-06")
   expect_true(all(out$date >= as.Date("2022-01-01")))
   expect_true(all(out$date <= as.Date("2022-06-30")))
+})
+
+test_that("hmrc_tax_receipts() returns every mapped head", {
+  skip_on_cran()
+  skip_if_offline()
+
+  out <- hmrc_tax_receipts(start = "2024-04", end = "2025-03")
+  expect_true(all(c("total_paid_over", "total_receipts", "income_tax",
+                    "vat", "nics_total") %in% out$tax_head))
+  expect_equal(length(unique(out$tax_head)), nrow(hmrc_list_tax_heads()))
+  # A relabelled column must keep its documented key, not get an auto key
+  expect_setequal(unique(out$tax_head), hmrc_list_tax_heads()$tax_head)
+  vat <- out$receipts_gbp_m[out$tax_head == "vat"]
+  expect_false(anyNA(vat))
 })
 
 test_that("hmrc_tax_receipts() tax filter returns only requested heads", {

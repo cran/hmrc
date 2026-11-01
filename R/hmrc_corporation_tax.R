@@ -19,8 +19,11 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_corporation_tax()
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   ct <- hmrc_corporation_tax()
+#'   ct[ct$type == "all_corporate_taxes", ]
+#' })
 #' options(op)
 #' }
 #'
@@ -61,28 +64,32 @@ hmrc_corporation_tax <- function(cache = TRUE) {
     attachment_url   = loc$attachment_url,
     slug             = loc$slug,
     cell_methods     = "cash",
-    frequency        = "annual"
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 
 parse_corporation_tax_table <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "Table_1A",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "Corporation Tax statistics"
+  raw <- read_sheet_raw(path, "Table_1A", pub)
 
-  header_row <- as.character(unlist(raw[5, ]))
-  year_cols  <- which(grepl("^20\\d{2}-\\d{2}$", trimws(header_row)))
+  # Header row: the first row with two or more "YYYY-YY" cells
+  is_year <- vapply(seq_len(nrow(raw)), function(i) {
+    sum(grepl("^\\d{4}-\\d{2}$", trimws(as.character(unlist(raw[i, ])))))
+  }, integer(1))
+  hdr <- which(is_year >= 2L)[1]
+  if (is.na(hdr)) abort_schema(pub, "the Table 1A year columns")
 
-  if (length(year_cols) == 0) {
-    cli::cli_abort("Could not locate year columns in Corporation Tax table. Please file an issue.")
-  }
+  header_row <- trimws(as.character(unlist(raw[hdr, ])))
+  year_cols  <- which(grepl("^\\d{4}-\\d{2}$", header_row))
+  years      <- header_row[year_cols]
 
-  years <- trimws(header_row[year_cols])
-
-  data_rows <- raw[6:nrow(raw), ]
+  data_rows <- raw[(hdr + 1L):nrow(raw), ]
   type_raw  <- trimws(as.character(data_rows[[1]]))
-  valid     <- nzchar(type_raw) & !grepl("End of|^NA$", type_raw)
+  valid     <- !is.na(type_raw) & nzchar(type_raw) &
+    !grepl("End of|^NA$", type_raw)
   data_rows <- data_rows[valid, ]
   type_raw  <- type_raw[valid]
 
@@ -108,7 +115,7 @@ parse_corporation_tax_table <- function(path) {
     for (j in seq_along(year_cols)) {
       col_idx <- year_cols[j]
       if (col_idx > ncol(data_rows)) next
-      val <- suppressWarnings(as.numeric(as.character(data_rows[i, col_idx])))
+      val <- parse_num(data_rows[i, col_idx])
       results[[length(results) + 1]] <- data.frame(
         tax_year       = years[j],
         type           = key,

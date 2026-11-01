@@ -16,12 +16,9 @@ knitr::opts_chunk$set(
 # hmrc_search(implemented = TRUE, frequency = "annual")
 
 ## ----receipts-basic-----------------------------------------------------------
-# # All 41 tax heads
+# # All 42 series
 # receipts <- hmrc_tax_receipts()
 # head(receipts)
-# #>         date   tax_head          description receipts_gbp_m
-# #>   2016-04-01 income_tax Income Tax (PAYE...          17423
-# #>   2016-05-01 income_tax Income Tax (PAYE...          11847
 
 ## ----list-heads---------------------------------------------------------------
 # hmrc_list_tax_heads()
@@ -33,17 +30,9 @@ knitr::opts_chunk$set(
 # )
 
 ## ----meta---------------------------------------------------------------------
-# hmrc_meta(big_three)
-# #> $dataset
-# #> [1] "tax_receipts_monthly"
-# #> $source_url
-# #> [1] "https://www.gov.uk/government/statistics/hmrc-tax-and-nics-receipts-for-the-uk"
-# #> $cell_methods
-# #> [1] "cash"
-# #> $frequency
-# #> [1] "monthly"
-# #> $fetched_at
-# #> [1] "2026-04-26 09:00:00 UTC"
+# m <- hmrc_meta(big_three)
+# m$source_url    # publication page
+# m$published_at  # GOV.UK publication time of the edition used
 
 ## ----receipts-plot, fig.width = 7, fig.height = 4-----------------------------
 # library(ggplot2)
@@ -84,8 +73,8 @@ knitr::opts_chunk$set(
 # ct[ct$type == "total_ct", c("tax_year", "receipts_gbp_m")]
 
 ## ----stamp--------------------------------------------------------------------
-# sd <- hmrc_stamp_duty(type = "sdlt_total")
-# tail(sd[, c("tax_year", "receipts_gbp_m")], 5)
+# sd <- hmrc_stamp_duty(type = c("sdlt_total", "total"))
+# tail(sd[, c("tax_year", "type", "receipts_gbp_m")], 6)
 
 ## ----rd-----------------------------------------------------------------------
 # # Cost of R&D credits: SME vs RDEC
@@ -113,11 +102,13 @@ knitr::opts_chunk$set(
 # hmrc_creative_industries(tax_year = "2023-24")
 
 ## ----taxgap-------------------------------------------------------------------
-# gap <- hmrc_tax_gap()
+# # Total tax gap over time
+# total <- hmrc_tax_gap(tax = "Total tax gap")
+# total[, c("tax_year", "gap_pct", "gap_gbp_bn")]
 # 
-# # Sort by absolute gap
-# gap[order(-gap$gap_gbp_bn),
-#     c("tax", "component", "gap_gbp_bn", "uncertainty")]
+# # Largest components in the latest year
+# latest <- hmrc_tax_gap(tax_year = "latest")
+# head(latest[order(-latest$gap_gbp_bn), c("tax", "type", "component", "gap_gbp_bn")])
 
 ## ----income-tax---------------------------------------------------------------
 # it <- hmrc_income_tax_stats(tax_year = "2023-24")

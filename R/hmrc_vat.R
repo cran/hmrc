@@ -26,9 +26,11 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_vat(measure = "total", start = "2010-01")
-#' hmrc_vat(start = "2020-01")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   vat <- hmrc_vat(measure = c("total", "repayments"), start = "2024-01")
+#'   head(vat)
+#' })
 #' options(op)
 #' }
 #'
@@ -73,67 +75,44 @@ hmrc_vat <- function(measure = NULL,
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "cash",
-    frequency        = "monthly"
+    frequency        = "monthly",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 
 VAT_COLS <- c(
-  "payments"   = "VAT payments",
-  "repayments" = "VAT repayments",
-  "import_vat" = "Import VAT",
-  "home_vat"   = "Home VAT",
-  "total"      = "Total VAT receipts"
+  payments   = "^payments",
+  repayments = "^repayments",
+  import_vat = "^import vat",
+  home_vat   = "^(net )?home vat",
+  total      = "^total vat"
+)
+
+VAT_DESC <- c(
+  payments   = "VAT payments",
+  repayments = "VAT repayments",
+  import_vat = "Import VAT",
+  home_vat   = "Net home VAT (payments less repayments)",
+  total      = "Total VAT receipts"
 )
 
 parse_vat_table <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "T1_VAT_receipts",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "VAT annual statistics"
+  raw <- read_sheet_raw(path, "T1_VAT_receipts", pub)
+  blk <- read_monthly_block(raw, pub)
+  idx <- match_columns(blk$header, VAT_COLS, pub)
 
-  monthly_start <- NA_integer_
-  for (i in seq_len(nrow(raw))) {
-    cell <- trimws(as.character(raw[i, 1]))
-    if (grepl("Table.*1b|by calendar year and month", cell, ignore.case = TRUE)) {
-      monthly_start <- i + 1
-      break
-    }
-  }
-  if (is.na(monthly_start)) {
-    cli::cli_abort("Could not locate monthly VAT data. Please file an issue.")
-  }
-
-  data_rows <- raw[monthly_start:nrow(raw), ]
-
-  dates_raw <- trimws(as.character(data_rows[[1]]))
-  dates     <- suppressWarnings(
-    as.Date(paste0("01 ", dates_raw), format = "%d %B %Y")
-  )
-  valid     <- !is.na(dates)
-  dates     <- dates[valid]
-  data_rows <- data_rows[valid, ]
-
-  col_keys  <- names(VAT_COLS)
-  col_descs <- unname(VAT_COLS)
-
-  results <- list()
-  for (j in seq_along(col_keys)) {
-    col_idx <- j + 1
-    if (col_idx > ncol(data_rows)) break
-    raw_vals <- as.character(data_rows[[col_idx]])
-    raw_vals[grepl("\\[", raw_vals)] <- NA_character_
-    vals <- suppressWarnings(as.numeric(raw_vals))
-
-    results[[j]] <- data.frame(
-      date           = dates,
-      measure        = col_keys[j],
-      description    = col_descs[j],
-      receipts_gbp_m = vals,
+  out <- do.call(rbind, lapply(names(VAT_COLS), function(k) {
+    data.frame(
+      date           = blk$dates,
+      measure        = k,
+      description    = VAT_DESC[[k]],
+      receipts_gbp_m = parse_num(raw[[idx[[k]]]][blk$rows]),
       stringsAsFactors = FALSE
     )
-  }
-
-  out <- do.call(rbind, results)
+  }))
   out <- out[order(out$measure, out$date), ]
   rownames(out) <- NULL
   out

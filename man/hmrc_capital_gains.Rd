@@ -4,7 +4,7 @@
 \alias{hmrc_capital_gains}
 \title{Download HMRC Capital Gains Tax statistics}
 \source{
-\url{https://www.gov.uk/government/organisations/hm-revenue-customs/series/capital-gains-tax-statistics}
+\url{https://www.gov.uk/government/statistics/capital-gains-tax-statistics}
 }
 \usage{
 hmrc_capital_gains(tax_year = NULL, measure = NULL, cache = TRUE)
@@ -25,8 +25,10 @@ Valid values: \code{"taxpayers_total_thousands"},
 }
 \value{
 An \code{hmrc_tbl} (long format) with columns \code{tax_year}, \code{measure},
-\code{value}. Numbers of taxpayers are in thousands; amounts in millions
-of pounds; percentages in percent. Suppressed cells return \code{NA}.
+\code{value}, and \code{status} (\code{"provisional"} for the years HMRC marks as
+provisional, otherwise \code{NA}). Numbers of taxpayers are in thousands;
+amounts in millions of pounds; percentages in per cent. Suppressed
+cells return \code{NA}.
 }
 \description{
 Downloads and tidies HMRC Table 1 of the Capital Gains Tax statistics
@@ -37,34 +39,35 @@ published annually each summer.
 \details{
 Gains are after the deduction of taper relief and losses plus attributed
 gains, but before deduction of the Annual Exempt Amount. Trusts include
-personal representatives of the deceased. Statistics for the latest two
-tax years are provisional and are revised in subsequent publications as
-late returns arrive.
+personal representatives of the deceased. Statistics for the latest tax
+years are provisional and are revised in subsequent publications as late
+returns arrive.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_capital_gains()
-hmrc_capital_gains(measure = "tax_total_gbp_m")
-hmrc_capital_gains(tax_year = "2022-23")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  cgt <- hmrc_capital_gains(measure = "tax_total_gbp_m")
+  tail(cgt)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

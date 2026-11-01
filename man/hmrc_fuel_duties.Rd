@@ -21,36 +21,44 @@ Valid values: \code{"total"}, \code{"petrol"}, \code{"diesel"}, \code{"other"}.}
 }
 \value{
 An \code{hmrc_tbl} with columns \code{date}, \code{fuel}, \code{description},
-\code{receipts_gbp_m}.
+\code{receipts_gbp_m}, and \code{provisional} (logical, \code{TRUE} for months HMRC
+flags as provisional).
 }
 \description{
 Downloads and tidies the HMRC Hydrocarbon Oils Bulletin, which reports
 monthly fuel duty receipts. Data runs from January 1990 to the most
 recent published month, updated twice per year (January and July).
 }
+\details{
+\code{petrol} and \code{diesel} are HMRC's "Total petrol" and "Total diesel"
+columns. \code{other} is the sum of fuel oil, gas oil and road fuel gases.
+\code{total} is HMRC's total hydrocarbon oils receipts.
+}
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_fuel_duties(fuel = "total", start = "2010-01")
-hmrc_fuel_duties()
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  fuel <- hmrc_fuel_duties(fuel = "total", start = "2024-01")
+  head(fuel)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

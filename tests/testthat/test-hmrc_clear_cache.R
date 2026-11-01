@@ -8,6 +8,7 @@ test_that("hmrc_clear_cache() works when cache is empty or absent", {
 })
 
 test_that("hmrc_clear_cache() accepts valid max_age_days", {
+  withr::local_options(hmrc.cache_dir = withr::local_tempdir())
   expect_no_error(hmrc_clear_cache(max_age_days = 30))
   expect_no_error(hmrc_clear_cache(max_age_days = 0))
 })
@@ -18,6 +19,7 @@ test_that("hmrc_clear_cache() rejects invalid max_age_days", {
 })
 
 test_that("hmrc_clear_cache() returns an invisible integer", {
+  withr::local_options(hmrc.cache_dir = withr::local_tempdir())
   result <- hmrc_clear_cache()
   expect_type(result, "integer")
 })

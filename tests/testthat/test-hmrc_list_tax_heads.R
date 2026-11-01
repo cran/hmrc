@@ -14,6 +14,7 @@ test_that("hmrc_list_tax_heads() contains expected tax heads", {
   expect_true("vat" %in% out$tax_head)
   expect_true("nics_total" %in% out$tax_head)
   expect_true("total_receipts" %in% out$tax_head)
+  expect_true("total_paid_over" %in% out$tax_head)
 })
 
 test_that("hmrc_list_tax_heads() has unique, non-missing identifiers", {

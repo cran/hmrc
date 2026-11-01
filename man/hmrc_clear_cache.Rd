@@ -21,19 +21,19 @@ older than that.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_clear_cache()
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
 hmrc_clear_cache(max_age_days = 30)
+hmrc_clear_cache()
 options(op)
 }
 
 }
 \seealso{
-Other infrastructure: 
-\code{\link{hmrc_cache_info}()},
-\code{\link{hmrc_list_tax_heads}()},
-\code{\link{hmrc_meta}()},
-\code{\link{hmrc_publications}()},
-\code{\link{hmrc_search}()}
+Other infrastructure:
+\code{\link[=hmrc_cache_info]{hmrc_cache_info()}},
+\code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}},
+\code{\link[=hmrc_meta]{hmrc_meta()}},
+\code{\link[=hmrc_publications]{hmrc_publications()}},
+\code{\link[=hmrc_search]{hmrc_search()}}
 }
 \concept{infrastructure}

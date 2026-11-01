@@ -39,34 +39,43 @@ the \code{"hmrc_meta"} attribute and can be inspected with \code{\link[=hmrc_met
 \description{
 Downloads and tidies the monthly HMRC Tax Receipts and National Insurance
 Contributions bulletin published on GOV.UK. The bulletin covers all major
-UK taxes and duties from April 2008 to the most recent month (monthly
-granularity), updated on approximately the 15th working day of each month.
+UK taxes and duties at monthly frequency and is updated on approximately
+the 15th working day of each month. HMRC's monthly table is a rolling
+window: it currently starts in April 2017.
+}
+\details{
+Months with no receipts for a head (for example Bank Levy outside its
+instalment months) are marked \verb{[X]} by HMRC and returned as \code{NA}. If HMRC
+adds a new series to the bulletin (Vaping Products Duty is due from
+October 2026), it is returned under a snake_case \code{tax_head} built from its
+column label, with a one-off message, until the package adds it to
+\code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}}.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_tax_receipts()
-hmrc_tax_receipts(tax = c("income_tax", "vat"))
-hmrc_tax_receipts(start = "2020-04")
-hmrc_tax_receipts(tax = "vat", start = "2019-01", end = "2024-12")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  tr <- hmrc_tax_receipts(tax = c("income_tax", "vat"), start = "2025-04")
+  head(tr)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

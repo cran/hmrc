@@ -13,7 +13,9 @@ hmrc_creative_industries(sector = NULL, tax_year = NULL, cache = TRUE)
 \item{sector}{Character vector or \code{NULL} (default = all sectors).
 Valid values: \code{"film"}, \code{"high_end_tv"}, \code{"animation"},
 \code{"childrens_tv"}, \code{"video_games"}, \code{"theatre"}, \code{"orchestra"},
-\code{"museum"}.}
+\code{"museum"}. Any relief HMRC adds to the release later as its own
+\verb{Table_1_*} sheet is included when \code{sector = NULL}, keyed by a
+snake_case version of its sheet name.}
 
 \item{tax_year}{Character vector or \code{NULL} (default = all years).}
 
@@ -26,8 +28,8 @@ An \code{hmrc_tbl} with columns:
 \item{tax_year}{Character. Tax year, e.g. \code{"2023-24"}.}
 \item{companies}{Numeric. Number of companies (where reported).}
 \item{claims}{Numeric. Number of claims (where reported).}
-\item{productions}{Numeric. Number of productions (films, games,
-etc., where reported).}
+\item{productions}{Numeric. Number of productions (films,
+programmes, games, exhibitions, etc., where reported).}
 \item{relief_gbp_m}{Numeric. Amount of relief paid, GBP million.}
 \item{status}{Character. HMRC revision status (e.g. \code{"Unchanged"},
 \code{"Provisional"}).}
@@ -38,7 +40,7 @@ Downloads and tidies Table 1 (annual time series) of the HMRC Creative
 Industries Statistics for each of the eight creative-industries reliefs:
 Film, High-end TV, Animation, Children's TV, Video Games, Theatre,
 Orchestra, and Museums and Galleries Exhibition. Published annually
-each August.
+in August or September.
 }
 \details{
 Creative Industries reliefs are paid on an accruals basis. The latest
@@ -48,30 +50,40 @@ Sector tables differ slightly in their column set (films track
 \code{productions}, video games track \code{productions}, theatre tracks
 \code{claims}/\code{productions}, museums track exhibitions, etc.); columns absent
 from a sector's table are returned as \code{NA}.
+
+From the September 2026 edition the film, TV, animation and video games
+tables report the legacy tax relief alongside the expenditure credits that
+replace it: the Audio-Visual Expenditure Credit (AVEC), the Independent
+Film Tax Credit (IFTC) and the Video Games Expenditure Credit (VGEC). For
+those sectors this function returns HMRC's "total" columns, which cover
+the legacy relief and the credits together and are the columns HMRC says
+to use when comparing years. The split by relief type is not returned.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_creative_industries(sector = "film")
-hmrc_creative_industries(tax_year = "2023-24")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  film <- hmrc_creative_industries(sector = "film")
+  tail(film)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

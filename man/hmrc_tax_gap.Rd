@@ -7,54 +7,72 @@
 \url{https://www.gov.uk/government/statistics/measuring-tax-gaps}
 }
 \usage{
-hmrc_tax_gap(tax = NULL, cache = TRUE)
+hmrc_tax_gap(tax = NULL, tax_year = NULL, cache = TRUE)
 }
 \arguments{
-\item{tax}{Character vector or \code{NULL} (default = all taxes). Filter by
-tax type, e.g. \code{"Income Tax"}, \code{"VAT"}, \code{"Corporation Tax"}. Use
-\code{unique(hmrc_tax_gap()$tax)} to see all available values.}
+\item{tax}{Character vector or \code{NULL} (default = all taxes). Filter on the
+\code{tax} column: \code{"VAT"}, \code{"Excise duty"},
+\code{"Income Tax, NICs, Capital Gains Tax"}, \code{"Corporation Tax"},
+\code{"Other taxes"}, \code{"Total tax gap"}.}
+
+\item{tax_year}{Character vector, \code{"latest"}, or \code{NULL} (default = all
+years). Filter to specific tax years, e.g. \code{"2024-25"}.}
 
 \item{cache}{Logical. Use cached file if available (default \code{TRUE}).}
 }
 \value{
-An \code{hmrc_tbl} with columns \code{tax_year}, \code{tax}, \code{taxpayer_type},
-\code{component}, \code{gap_pct}, \code{gap_gbp_bn}, \code{uncertainty}.
+An \code{hmrc_tbl} with columns:
+\describe{
+\item{tax_year}{Character. Tax year, e.g. \code{"2024-25"}.}
+\item{tax}{Character. Tax group, e.g. \code{"VAT"}, \code{"Corporation Tax"}.}
+\item{type}{Character. Sub-group, e.g. \code{"Self Assessment"},
+\code{"Tobacco duty"}, or the group total.}
+\item{component}{Character. Taxpayer group or duty, e.g.
+\code{"Small businesses"}, \code{"Cigarette duty"}.}
+\item{gap_pct}{Numeric. Tax gap as a per cent of theoretical
+liabilities (Table 1.1).}
+\item{gap_gbp_bn}{Numeric. Tax gap in GBP billion (Table 1.2).}
+}
 }
 \description{
-Downloads and tidies the HMRC Measuring the Tax Gap publication, which
-estimates the difference between the tax theoretically owed and the tax
-actually collected, broken down by tax type and taxpayer group. Published
-annually in June, covering the most recent financial year.
+Downloads and tidies the HMRC Measuring Tax Gaps tables: estimates of the
+difference between the tax that should in theory be paid and the tax
+actually collected, by tax, taxpayer type and component. Since the 2026
+edition HMRC publishes a consistent time series from 2005-06, and every
+edition revises earlier years. Published annually in June.
 }
 \details{
-The tax gap publication is cross-sectional: each edition covers a single
-financial year. This function returns data for the most recent edition
-available on GOV.UK. Historical estimates back to 2005-06 are available
-in a separate HMRC publication (Measuring the Tax Gap: Time Series).
+Rows that appear only in the GBP table (avoidance and hidden economy
+components) have \code{gap_pct} of \code{NA}. Estimates HMRC shows as \verb{<0.1} (below
+GBP 0.05bn) are returned as \code{NA}. Each June edition revises the whole
+series, so results change between editions; \code{\link[=hmrc_meta]{hmrc_meta()}} records the
+edition's publication date.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_tax_gap()
-hmrc_tax_gap(tax = "VAT")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  gap <- hmrc_tax_gap(tax = "Total tax gap")
+  tail(gap)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

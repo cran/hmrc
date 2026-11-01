@@ -41,16 +41,13 @@ hmrc_search(implemented = TRUE, frequency = "annual")
 ## Monthly tax receipts
 
 `hmrc_tax_receipts()` downloads the monthly HMRC Tax Receipts and National Insurance
-Contributions bulletin, covering 41 tax heads from April 2008 to the most recent
-published month.
+Contributions bulletin, covering 42 series. HMRC's monthly table is a rolling window,
+currently from April 2017 to the most recent published month.
 
 ```{r receipts-basic}
-# All 41 tax heads
+# All 42 series
 receipts <- hmrc_tax_receipts()
 head(receipts)
-#>         date   tax_head          description receipts_gbp_m
-#>   2016-04-01 income_tax Income Tax (PAYE...          17423
-#>   2016-05-01 income_tax Income Tax (PAYE...          11847
 ```
 
 Use `hmrc_list_tax_heads()` to see all available identifiers without downloading
@@ -72,17 +69,9 @@ big_three <- hmrc_tax_receipts(
 Inspect the provenance metadata on any result:
 
 ```{r meta}
-hmrc_meta(big_three)
-#> $dataset
-#> [1] "tax_receipts_monthly"
-#> $source_url
-#> [1] "https://www.gov.uk/government/statistics/hmrc-tax-and-nics-receipts-for-the-uk"
-#> $cell_methods
-#> [1] "cash"
-#> $frequency
-#> [1] "monthly"
-#> $fetched_at
-#> [1] "2026-04-26 09:00:00 UTC"
+m <- hmrc_meta(big_three)
+m$source_url    # publication page
+m$published_at  # GOV.UK publication time of the edition used
 ```
 
 ```{r receipts-plot, fig.width = 7, fig.height = 4}
@@ -118,7 +107,8 @@ head(vat[vat$measure == "repayments", c("date", "receipts_gbp_m")])
 ## Fuel duties
 
 `hmrc_fuel_duties()` covers monthly hydrocarbon oil duty receipts from January 1990,
-broken down into petrol, diesel, other, and total.
+broken down into petrol, diesel, other, and total. The `provisional` column marks
+months HMRC has not yet finalised.
 
 ```{r fuel}
 fuel <- hmrc_fuel_duties(fuel = "total", start = "2010-01")
@@ -143,7 +133,7 @@ tobacco <- hmrc_tobacco_duties(product = c("cigarettes", "hand_rolling"),
 `hmrc_corporation_tax()` returns annual Corporation Tax receipts broken down by levy
 type: onshore CT, offshore CT, Bank Levy, Bank Surcharge, Residential Property
 Developer Tax (RPDT), Energy Profits Levy (EPL), and Electricity Generators Levy
-(EGL). Covers 2019-20 to the most recent financial year.
+(EGL). Covers the latest six financial years.
 
 ```{r ct}
 ct <- hmrc_corporation_tax()
@@ -153,17 +143,19 @@ ct[ct$type == "total_ct", c("tax_year", "receipts_gbp_m")]
 ## Stamp duty
 
 `hmrc_stamp_duty()` returns annual stamp duty receipts by type from 2003-04: SDLT
-on property, SDLT on new leases, SDRT on shares, and stamp duty on documents.
+on property, SDLT on new leases, SDRT on shares, stamp duty on documents, and the
+share and overall totals.
 
 ```{r stamp}
-sd <- hmrc_stamp_duty(type = "sdlt_total")
-tail(sd[, c("tax_year", "receipts_gbp_m")], 5)
+sd <- hmrc_stamp_duty(type = c("sdlt_total", "total"))
+tail(sd[, c("tax_year", "type", "receipts_gbp_m")], 6)
 ```
 
 ## R&D tax credits
 
 `hmrc_rd_credits()` returns annual statistics on R&D tax credit claims and their
-cost by scheme (SME R&D Relief and RDEC) from 2000-01.
+cost by scheme (SME R&D Relief and RDEC) from 2016-17. From 2024-25 the SME
+group includes ERIS and the RDEC group includes the merged scheme.
 
 ```{r rd}
 # Cost of R&D credits: SME vs RDEC
@@ -185,9 +177,9 @@ tail(cgt[, c("tax_year", "value")], 6)
 ## Inheritance Tax
 
 `hmrc_inheritance_tax()` returns IHT estate counts, tax due, average tax, and
-effective tax rates by net-estate band for the latest published year of death
-(HMRC IHT Table 12.1a). The publication carries a roughly three-year
-administrative lag.
+effective tax rates (in per cent) by net-estate band for the latest published
+year of death (HMRC IHT Table 12.1a). It is published about two years after
+the year of death.
 
 ```{r iht}
 iht <- hmrc_inheritance_tax()
@@ -221,23 +213,27 @@ hmrc_creative_industries(tax_year = "2023-24")
 
 ## Tax gap
 
-`hmrc_tax_gap()` returns the most recent cross-sectional tax gap estimates,
-broken down by tax type, taxpayer group, and behaviour component (evasion,
-error, avoidance, etc.).
+`hmrc_tax_gap()` returns the tax gap from 2005-06 by tax and taxpayer group,
+as a per cent of theoretical liabilities and in GBP billion. Each June edition
+revises the whole series.
 
 ```{r taxgap}
-gap <- hmrc_tax_gap()
+# Total tax gap over time
+total <- hmrc_tax_gap(tax = "Total tax gap")
+total[, c("tax_year", "gap_pct", "gap_gbp_bn")]
 
-# Sort by absolute gap
-gap[order(-gap$gap_gbp_bn),
-    c("tax", "component", "gap_gbp_bn", "uncertainty")]
+# Largest components in the latest year
+latest <- hmrc_tax_gap(tax_year = "latest")
+head(latest[order(-latest$gap_gbp_bn), c("tax", "type", "component", "gap_gbp_bn")])
 ```
 
 ## Income Tax liabilities
 
-`hmrc_income_tax_stats()` returns annual Income Tax liabilities by income range
+`hmrc_income_tax_stats()` returns Income Tax liabilities by income range
 (HMRC Table 2.5), including taxpayer counts, total income, tax liabilities, and
-average tax rates.
+average tax rates in per cent. The earliest year is outturn from the Survey of
+Personal Incomes and later years are projections, marked in the `estimate`
+column.
 
 ```{r income-tax}
 it <- hmrc_income_tax_stats(tax_year = "2023-24")
@@ -272,8 +268,9 @@ ggplot(prop, aes(x = date, y = transactions / 1000)) +
 
 ## Caching
 
-All downloads are cached locally in your user cache directory. Subsequent calls
-return the cached file instantly with no network request.
+All downloads are cached in your user cache directory. Each call checks the
+GOV.UK Content API for the current edition and reuses the cached file unless
+HMRC has published a new one.
 
 ```{r cache}
 # Inspect the cache

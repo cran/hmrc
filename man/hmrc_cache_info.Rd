@@ -19,7 +19,7 @@ when to clear stale files via \code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
 info <- hmrc_cache_info()
 attr(info, "cache_dir")
 options(op)
@@ -27,11 +27,11 @@ options(op)
 
 }
 \seealso{
-Other infrastructure: 
-\code{\link{hmrc_clear_cache}()},
-\code{\link{hmrc_list_tax_heads}()},
-\code{\link{hmrc_meta}()},
-\code{\link{hmrc_publications}()},
-\code{\link{hmrc_search}()}
+Other infrastructure:
+\code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}},
+\code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}},
+\code{\link[=hmrc_meta]{hmrc_meta()}},
+\code{\link[=hmrc_publications]{hmrc_publications()}},
+\code{\link[=hmrc_search]{hmrc_search()}}
 }
 \concept{infrastructure}

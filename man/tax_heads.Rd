@@ -5,15 +5,18 @@
 \alias{tax_heads}
 \title{Tax head lookup table}
 \format{
-A data frame with 41 rows and 4 columns:
+A data frame with 42 rows and 4 columns:
 \describe{
 \item{tax_head}{Character. Identifier used in the \code{tax} argument of
 \code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}}.}
 \item{description}{Character. Plain-English description.}
 \item{category}{Character. Broad grouping: \code{"income"}, \code{"nics"},
-\code{"consumption"}, \code{"property"}, \code{"environment"}, \code{"expenditure"},
-\code{"other"}, or \code{"total"}.}
-\item{available_from}{Character. Approximate start year of monthly data.}
+\code{"consumption"}, \code{"property"}, \code{"environment"}, \code{"other"}, or
+\code{"total"}.}
+\item{available_from}{Character. First year with receipts in HMRC's
+monthly table at the package release. The table is a rolling window
+(currently April 2017 onwards), so long-standing taxes show the
+window start. \code{NA} means no receipts in the current window.}
 }
 }
 \source{

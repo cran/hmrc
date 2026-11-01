@@ -1,4 +1,4 @@
-# hmrc-tbl.R — S3 class with provenance metadata
+# hmrc-tbl.R: S3 class with provenance metadata
 
 #' Construct an `hmrc_tbl` object
 #'
@@ -16,6 +16,8 @@
 #' @param frequency `"monthly"`, `"quarterly"`, `"annual"`, or `"point_in_time"`.
 #' @param vintage_date `Date` of the as-of vintage; `NA` for the latest
 #'   published version.
+#' @param published_at GOV.UK `public_updated_at` timestamp of the edition
+#'   the data came from (character, as returned by the Content API).
 #' @return An `hmrc_tbl` (subclass of `data.frame`).
 #' @noRd
 new_hmrc_tbl <- function(x,
@@ -26,7 +28,8 @@ new_hmrc_tbl <- function(x,
                          slug             = NA_character_,
                          cell_methods     = NA_character_,
                          frequency        = NA_character_,
-                         vintage_date     = as.Date(NA)) {
+                         vintage_date     = as.Date(NA),
+                         published_at     = NA_character_) {
   stopifnot(is.data.frame(x))
 
   attr(x, "hmrc_meta") <- list(
@@ -38,6 +41,7 @@ new_hmrc_tbl <- function(x,
     cell_methods     = cell_methods,
     frequency        = frequency,
     vintage_date     = vintage_date,
+    published_at     = parse_govuk_time(published_at),
     fetched_at       = Sys.time(),
     package_version  = as.character(utils::packageVersion("hmrc"))
   )
@@ -51,17 +55,20 @@ new_hmrc_tbl <- function(x,
 #' Provenance metadata of an `hmrc_tbl`
 #'
 #' Returns the provenance list attached to a result from any `hmrc_*` data
-#' fetcher: source URL, fetch time, vintage, cell methods, and so on. Useful
-#' for citation, audit trails, and reproducibility.
+#' fetcher: source URL, attachment URL, the GOV.UK publication timestamp of
+#' the edition (`published_at`), fetch time, vintage, cell methods, and so
+#' on. Useful for citation, audit trails, and reproducibility.
 #'
 #' @param x An object returned by an `hmrc_*` data function.
 #' @return A named list, or `NULL` if `x` has no metadata.
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' tr <- hmrc_tax_receipts(tax = "vat", start = "2024-01")
-#' hmrc_meta(tr)
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   tr <- hmrc_tax_receipts(tax = "vat", start = "2024-01")
+#'   hmrc_meta(tr)
+#' })
 #' options(op)
 #' }
 #'
@@ -111,8 +118,8 @@ as.data.frame.hmrc_tbl <- function(x, ...) {
   x
 }
 
-# Subsetting drops to plain data.frame if rows or columns are removed —
-# provenance no longer reflects the full dataset.
+# Subsetting keeps the class and provenance, so filtered results can still
+# be traced back to their source edition.
 #' @export
 `[.hmrc_tbl` <- function(x, i, j, ..., drop = TRUE) {
   out <- NextMethod()

@@ -1,4 +1,4 @@
-# utils-dates.R — shared date filtering helper
+# utils-dates.R: shared date filtering helper
 
 #' Filter a data frame by start/end month
 #'

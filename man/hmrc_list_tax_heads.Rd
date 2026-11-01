@@ -13,7 +13,9 @@ A data frame with columns:
 \code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}}.}
 \item{description}{Character. Plain-English description.}
 \item{category}{Character. Broad grouping.}
-\item{available_from}{Character. Earliest year of monthly data.}
+\item{available_from}{Character. First year with receipts in HMRC's
+monthly table at the package release (\code{NA} if none in the current
+window).}
 }
 }
 \description{
@@ -26,11 +28,11 @@ hmrc_list_tax_heads()
 
 }
 \seealso{
-Other infrastructure: 
-\code{\link{hmrc_cache_info}()},
-\code{\link{hmrc_clear_cache}()},
-\code{\link{hmrc_meta}()},
-\code{\link{hmrc_publications}()},
-\code{\link{hmrc_search}()}
+Other infrastructure:
+\code{\link[=hmrc_cache_info]{hmrc_cache_info()}},
+\code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}},
+\code{\link[=hmrc_meta]{hmrc_meta()}},
+\code{\link[=hmrc_publications]{hmrc_publications()}},
+\code{\link[=hmrc_search]{hmrc_search()}}
 }
 \concept{infrastructure}

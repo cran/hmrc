@@ -17,6 +17,8 @@
 #'     \item{companies}{Numeric. Number of companies electing into the regime
 #'       (rounded to nearest 5 by HMRC).}
 #'     \item{relief_gbp_m}{Numeric. Total relief in millions of pounds.}
+#'     \item{status}{Character. HMRC's label for the year where it gives one
+#'       (e.g. `"projection"` for the latest year), otherwise `NA`.}
 #'   }
 #'
 #' @source
@@ -24,9 +26,10 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_patent_box()
-#' hmrc_patent_box(tax_year = "2022-23")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   hmrc_patent_box()
+#' })
 #' options(op)
 #' }
 #'
@@ -64,45 +67,36 @@ hmrc_patent_box <- function(tax_year = NULL,
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "counts/cash",
-    frequency        = "annual"
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
+
+PB_COLS <- c(
+  companies    = "^number of companies",
+  relief_gbp_m = "^amount of relief"
+)
 
 parse_patent_box_table1 <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "Table_1",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "Patent Box reliefs statistics"
+  raw <- read_sheet_raw(path, "Table_1", pub)
 
-  # Find header row: col 1 == "Year"
-  hdr_row <- NA_integer_
-  for (i in seq_len(nrow(raw))) {
-    cell <- trimws(as.character(raw[i, 1]))
-    if (identical(tolower(cell), "year")) {
-      hdr_row <- i
-      break
-    }
-  }
-  if (is.na(hdr_row)) {
-    cli::cli_abort("Could not locate Patent Box Table 1 header row.")
-  }
+  hdr <- find_row(raw, "^year$")[1]
+  if (is.na(hdr)) abort_schema(pub, "the Table 1 header row")
+  idx <- match_columns(unlist(raw[hdr, ]), PB_COLS, pub)
 
-  data_rows <- raw[(hdr_row + 1L):nrow(raw), ]
-  yr_raw    <- trimws(as.character(data_rows[[1]]))
-  is_year   <- grepl("^\\d{4}-\\d{2}$", yr_raw)
-  data_rows <- data_rows[is_year, ]
-  yr_raw    <- yr_raw[is_year]
-
-  parse_num <- function(x) {
-    x <- gsub(",", "", trimws(as.character(x)))
-    x[grepl("\\[", x)] <- NA_character_
-    suppressWarnings(as.numeric(x))
-  }
+  labels <- trimws(as.character(raw[[1]]))
+  years  <- parse_tax_year(labels)
+  rows   <- which(!is.na(years) & seq_along(years) > hdr)
+  if (length(rows) == 0L) abort_schema(pub, "any year rows in Table 1")
 
   data.frame(
-    tax_year     = yr_raw,
-    companies    = parse_num(data_rows[[2]]),
-    relief_gbp_m = parse_num(data_rows[[3]]),
+    tax_year     = years[rows],
+    companies    = parse_num(raw[[idx[["companies"]]]][rows]),
+    relief_gbp_m = parse_num(raw[[idx[["relief_gbp_m"]]]][rows]),
+    status       = row_label_note(labels[rows]),
     stringsAsFactors = FALSE
   )
 }

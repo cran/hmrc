@@ -16,17 +16,20 @@
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
 #' @return An `hmrc_tbl` with columns `date`, `nation`, `type`,
-#'   `transactions`.
+#'   `transactions`, and `provisional` (logical, `TRUE` for months HMRC
+#'   flags as provisional).
 #'
 #' @source
 #' <https://www.gov.uk/government/statistics/monthly-property-transactions-completed-in-the-uk-with-value-40000-or-above>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_property_transactions()
-#' hmrc_property_transactions(type = "residential", nation = "england",
-#'                            start = "2020-01")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   mpt <- hmrc_property_transactions(type = "residential", nation = "england",
+#'                                     start = "2025-01")
+#'   head(mpt)
+#' })
 #' options(op)
 #' }
 #'
@@ -82,57 +85,43 @@ hmrc_property_transactions <- function(type   = c("all", "residential", "non_res
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "counts",
-    frequency        = "monthly"
+    frequency        = "monthly",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 
 MPT_SHEET_MAP <- c(
   residential     = "Residential_monthly",
   non_residential = "Non-residential_monthly"
 )
 
+# Exact matches, so "UK (seasonally adjusted)" is not mistaken for "UK".
 MPT_NATION_COLS <- c(
-  "England"          = "england",
-  "Scotland"         = "scotland",
-  "Wales"            = "wales",
-  "Northern Ireland" = "northern_ireland",
-  "UK"               = "uk"
+  england          = "^england$",
+  scotland         = "^scotland$",
+  wales            = "^wales$",
+  northern_ireland = "^northern ireland$",
+  uk               = "^uk$"
 )
 
 parse_mpt_table <- function(path) {
+  pub <- "Monthly property transactions"
   results <- list()
 
   for (type_key in names(MPT_SHEET_MAP)) {
-    sheet <- MPT_SHEET_MAP[[type_key]]
-    raw   <- readODS::read_ods(path, sheet = sheet,
-                               col_names = FALSE, as_tibble = FALSE)
+    raw <- read_sheet_raw(path, MPT_SHEET_MAP[[type_key]], pub)
+    blk <- read_monthly_block(raw, pub)
+    idx <- match_columns(blk$header, MPT_NATION_COLS, pub)
 
-    header_row <- as.character(unlist(raw[6, ]))
-    data_rows  <- raw[7:nrow(raw), ]
-
-    dates_raw  <- trimws(as.character(data_rows[[1]]))
-    dates      <- suppressWarnings(
-      as.Date(paste0("01 ", dates_raw), format = "%d %B %Y")
-    )
-
-    valid     <- !is.na(dates)
-    dates     <- dates[valid]
-    data_rows <- data_rows[valid, ]
-
-    for (j in seq_along(header_row)) {
-      hdr <- trimws(header_row[j])
-      if (!hdr %in% names(MPT_NATION_COLS)) next
-
-      nation_key <- MPT_NATION_COLS[[hdr]]
-      vals       <- suppressWarnings(as.numeric(as.character(data_rows[[j]])))
-
-      results[[length(results) + 1]] <- data.frame(
-        date         = dates,
+    for (nation_key in names(MPT_NATION_COLS)) {
+      results[[length(results) + 1L]] <- data.frame(
+        date         = blk$dates,
         nation       = nation_key,
         type         = type_key,
-        transactions = vals,
+        transactions = parse_num(raw[[idx[[nation_key]]]][blk$rows]),
+        provisional  = blk$provisional,
         stringsAsFactors = FALSE
       )
     }

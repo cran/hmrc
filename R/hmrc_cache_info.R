@@ -11,7 +11,7 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
 #' info <- hmrc_cache_info()
 #' attr(info, "cache_dir")
 #' options(op)

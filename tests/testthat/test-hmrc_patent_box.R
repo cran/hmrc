@@ -5,8 +5,9 @@ test_that("hmrc_patent_box() returns expected structure", {
   out <- hmrc_patent_box()
 
   expect_s3_class(out, "hmrc_tbl")
-  expect_named(out, c("tax_year", "companies", "relief_gbp_m"))
+  expect_named(out, c("tax_year", "companies", "relief_gbp_m", "status"))
   expect_true(all(grepl("^\\d{4}-\\d{2}$", out$tax_year)))
+  expect_false(any(duplicated(out$tax_year)))
   expect_type(out$companies, "double")
   expect_type(out$relief_gbp_m, "double")
 
@@ -21,6 +22,7 @@ test_that("hmrc_patent_box() series starts no later than 2014-15", {
 
   out <- hmrc_patent_box()
   expect_true(min(out$tax_year) <= "2014-15")
+  expect_true(all(out$relief_gbp_m > 0, na.rm = TRUE))
 })
 
 test_that("hmrc_patent_box() warns on unknown year", {

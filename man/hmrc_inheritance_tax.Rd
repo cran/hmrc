@@ -22,7 +22,7 @@ band in pounds.}
 \code{"GBP 0-100k"}, \code{"Total"}.}
 \item{measure}{Character. One of \code{"number_not_taxed"},
 \code{"number_taxed"}, \code{"tax_due_gbp_m"}, \code{"avg_tax_gbp"},
-\code{"effective_rate_pct"}.}
+\code{"effective_rate_pct"} (in per cent).}
 \item{value}{Numeric. Value, with \verb{[z]} (no tax due to NRB) and
 \verb{[c]} (disclosure suppression) returned as \code{NA}.}
 }
@@ -31,31 +31,34 @@ band in pounds.}
 Downloads and tidies HMRC Table 12.1a of the Inheritance Tax Liabilities
 Statistics: numbers of estates, tax due, average tax, and average
 effective tax rate, broken down by net-estate band, for the latest
-published year of death. Published annually in July, ~3 years after the
-year of death due to the administration window.
+published year of death. Published annually in July, about two years
+after the end of the year of death because estates take time to settle.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_inheritance_tax()
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  iht <- hmrc_inheritance_tax()
+  iht[iht$estate_band == "Total", ]
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_rd_credits}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_rd_credits]{hmrc_rd_credits()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

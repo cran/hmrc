@@ -3,8 +3,8 @@
 #' Downloads and tidies HMRC Table 12.1a of the Inheritance Tax Liabilities
 #' Statistics: numbers of estates, tax due, average tax, and average
 #' effective tax rate, broken down by net-estate band, for the latest
-#' published year of death. Published annually in July, ~3 years after the
-#' year of death due to the administration window.
+#' published year of death. Published annually in July, about two years
+#' after the end of the year of death because estates take time to settle.
 #'
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
@@ -17,7 +17,7 @@
 #'       `"GBP 0-100k"`, `"Total"`.}
 #'     \item{measure}{Character. One of `"number_not_taxed"`,
 #'       `"number_taxed"`, `"tax_due_gbp_m"`, `"avg_tax_gbp"`,
-#'       `"effective_rate_pct"`.}
+#'       `"effective_rate_pct"` (in per cent).}
 #'     \item{value}{Numeric. Value, with `[z]` (no tax due to NRB) and
 #'       `[c]` (disclosure suppression) returned as `NA`.}
 #'   }
@@ -27,8 +27,11 @@
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_inheritance_tax()
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   iht <- hmrc_inheritance_tax()
+#'   iht[iht$estate_band == "Total", ]
+#' })
 #' options(op)
 #' }
 #'
@@ -37,7 +40,7 @@
 hmrc_inheritance_tax <- function(cache = TRUE) {
 
   slug <- "inheritance-tax-liabilities-statistics"
-  loc  <- resolve_govuk_attachment(slug, "table_12_1\\.ods")
+  loc  <- resolve_govuk_attachment(slug, "^table_12_1(_[a-z]+)?\\.ods$")
   path <- download_cached(loc$attachment_url, cache = cache)
 
   cli::cli_progress_step("Parsing data")
@@ -54,19 +57,21 @@ hmrc_inheritance_tax <- function(cache = TRUE) {
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "liabilities",
-    frequency        = "annual"
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 #
-# IHT 12_1a layout (annual cross-section, ~3yr publication lag):
+# IHT 12_1a layout (annual cross-section, about two years after year of death):
 #   Sheet "12_1a"
-#   Row 5 = headers, e.g. "Net estate (lower limits) [Note 1]" |
-#           "2022 to 2023 number not taxed" | "2022 to 2023 number taxed" |
-#           "2022 to 2023 tax due (£ million) [Note 2]" |
-#           "2022 to 2023 average tax (£)" |
-#           "2022 to 2023 average effective tax rate of taxpaying estates (per cent)"
+#   Header row, e.g. "Net estate (lower limits) [Note 1]" |
+#           "2023 to 2024 number not taxed" | "2023 to 2024 number taxed" |
+#           "2023 to 2024 tax due (GBP million) [Note 2]" |
+#           "2023 to 2024 average tax (GBP)" |
+#           "2023 to 2024 average effective tax rate of taxpaying estates"
+#   The effective rate is stored as a proportion and returned in per cent.
 #   Row 6+ = data: net-estate lower-limit GBP (0, 100000, ..., 10000000) +
 #                  totals row "Total estates notified".
 # Suppressed cells: "[z]" = no tax (estate below NRB), "[c]" = disclosure.
@@ -80,8 +85,7 @@ IHT_MEASURE_PATTERNS <- c(
 )
 
 parse_iht_12_1a <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "12_1a",
-                           col_names = FALSE, as_tibble = FALSE)
+  raw <- read_sheet_raw(path, "12_1a", "Inheritance Tax statistics")
 
   # Find header row: cell A* contains "Net estate (lower limits)"
   hdr_row <- NA_integer_
@@ -93,7 +97,7 @@ parse_iht_12_1a <- function(path) {
     }
   }
   if (is.na(hdr_row)) {
-    cli::cli_abort("Could not locate IHT Table 12.1a header row. Please file an issue.")
+    abort_schema("Inheritance Tax statistics", "the Table 12.1a header row")
   }
 
   header_row <- as.character(unlist(raw[hdr_row, ]))
@@ -130,7 +134,7 @@ parse_iht_12_1a <- function(path) {
   numeric_idx <- grep("^[0-9]", band_raw)
   keep_idx <- sort(unique(c(numeric_idx, total_idx)))
   if (length(keep_idx) == 0) {
-    cli::cli_abort("No data rows found in IHT 12_1a.")
+    abort_schema("Inheritance Tax statistics", "any data rows in Table 12.1a")
   }
   data_rows <- data_rows[keep_idx, ]
   band_raw  <- band_raw[keep_idx]
@@ -166,28 +170,24 @@ parse_iht_12_1a <- function(path) {
   estate_band <- mapply(fmt_band, estate_band_lower_gbp, is_total,
                         USE.NAMES = FALSE)
 
-  parse_num <- function(x) {
-    x <- gsub(",", "", trimws(as.character(x)))
-    x[grepl("\\[", x)] <- NA_character_
-    suppressWarnings(as.numeric(x))
-  }
-
   results <- list()
   for (j in seq_along(col_measure)) {
     if (is.na(col_measure[j])) next
     if (j > ncol(data_rows)) next
+    value <- parse_num(data_rows[[j]])
+    if (col_measure[j] == "effective_rate_pct") value <- as_percent(value)
     results[[length(results) + 1L]] <- data.frame(
       tax_year              = tax_year,
       estate_band_lower_gbp = estate_band_lower_gbp,
       estate_band           = estate_band,
       measure               = col_measure[j],
-      value                 = parse_num(data_rows[[j]]),
+      value                 = value,
       stringsAsFactors      = FALSE
     )
   }
 
   if (length(results) == 0) {
-    cli::cli_abort("No measure columns recognised in IHT 12_1a.")
+    abort_schema("Inheritance Tax statistics", "any measure columns in Table 12.1a")
   }
 
   out <- do.call(rbind, results)

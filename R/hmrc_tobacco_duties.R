@@ -2,8 +2,7 @@
 #'
 #' Downloads and tidies the HMRC Tobacco Bulletin, which reports monthly
 #' tobacco products duty receipts by product type. Data runs from January
-#' 1991 to the most recent published month, updated twice per year
-#' (February and August).
+#' 1991 to the most recent published month.
 #'
 #' @param product Character vector or `NULL` (default = all products).
 #'   Valid values: `"cigarettes"`, `"cigars"`, `"hand_rolling"`,
@@ -13,16 +12,19 @@
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
 #' @return An `hmrc_tbl` with columns `date`, `product`, `description`,
-#'   `receipts_gbp_m`.
+#'   `receipts_gbp_m`, and `provisional` (logical, `TRUE` for months HMRC
+#'   flags as provisional).
 #'
 #' @source
 #' <https://www.gov.uk/government/statistics/tobacco-bulletin>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_tobacco_duties(start = "2015-01")
-#' hmrc_tobacco_duties(product = "cigarettes")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   tob <- hmrc_tobacco_duties(product = "cigarettes", start = "2024-01")
+#'   head(tob)
+#' })
 #' options(op)
 #' }
 #'
@@ -33,7 +35,7 @@ hmrc_tobacco_duties <- function(product = NULL,
                                 end     = NULL,
                                 cache   = TRUE) {
 
-  valid_products <- c("cigarettes", "cigars", "hand_rolling", "other", "total")
+  valid_products <- names(TOBACCO_COLS)
   if (!is.null(product)) {
     bad <- setdiff(product, valid_products)
     if (length(bad) > 0) {
@@ -67,73 +69,45 @@ hmrc_tobacco_duties <- function(product = NULL,
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "cash",
-    frequency        = "monthly"
+    frequency        = "monthly",
+    published_at     = loc$public_updated_at
   )
 }
 
-# ── Internal parser ────────────────────────────────────────────────────────────
+# -- Internal parser -----------------------------------------------------------
 
 TOBACCO_COLS <- c(
-  "cigarettes"   = "Cigarettes",
-  "cigars"       = "Cigars",
-  "hand_rolling" = "Hand-rolling tobacco",
-  "other"        = "Other tobacco products",
-  "total"        = "Total tobacco products"
+  cigarettes   = "^cigarettes",
+  cigars       = "^cigars",
+  hand_rolling = "^(hrt|hand.?rolling)",
+  other        = "^other",
+  total        = "total$"
+)
+
+TOBACCO_DESC <- c(
+  cigarettes   = "Cigarettes",
+  cigars       = "Cigars",
+  hand_rolling = "Hand-rolling tobacco",
+  other        = "Other tobacco products",
+  total        = "Total tobacco products"
 )
 
 parse_tobacco_table <- function(path) {
-  raw <- readODS::read_ods(path, sheet = "Table_1_receipts",
-                           col_names = FALSE, as_tibble = FALSE)
+  pub <- "Tobacco Bulletin"
+  raw <- read_sheet_raw(path, "Table_1_receipts", pub)
+  blk <- read_monthly_block(raw, pub)
+  idx <- match_columns(blk$header, TOBACCO_COLS, pub)
 
-  monthly_start <- NA_integer_
-  for (i in seq_len(nrow(raw))) {
-    cell <- trimws(as.character(raw[i, 1]))
-    if (grepl("Table.*1c|by month", cell, ignore.case = TRUE)) {
-      monthly_start <- i + 1
-      break
-    }
-  }
-  if (is.na(monthly_start)) {
-    for (i in seq_len(nrow(raw))) {
-      cell <- trimws(as.character(raw[i, 1]))
-      if (grepl("^[A-Za-z]+ \\d{4}$", cell)) {
-        monthly_start <- i
-        break
-      }
-    }
-  }
-  if (is.na(monthly_start)) {
-    cli::cli_abort("Could not locate monthly data in tobacco bulletin. Please file an issue.")
-  }
-
-  data_rows <- raw[monthly_start:nrow(raw), ]
-
-  dates_raw <- trimws(as.character(data_rows[[1]]))
-  dates     <- suppressWarnings(
-    as.Date(paste0("01 ", dates_raw), format = "%d %B %Y")
-  )
-  valid     <- !is.na(dates)
-  dates     <- dates[valid]
-  data_rows <- data_rows[valid, ]
-
-  col_keys  <- names(TOBACCO_COLS)
-  col_descs <- unname(TOBACCO_COLS)
-
-  results <- list()
-  for (j in seq_along(col_keys)) {
-    col_idx <- j + 1
-    if (col_idx > ncol(data_rows)) break
-    vals <- suppressWarnings(as.numeric(as.character(data_rows[[col_idx]])))
-    results[[j]] <- data.frame(
-      date           = dates,
-      product        = col_keys[j],
-      description    = col_descs[j],
-      receipts_gbp_m = vals,
+  out <- do.call(rbind, lapply(names(TOBACCO_COLS), function(k) {
+    data.frame(
+      date           = blk$dates,
+      product        = k,
+      description    = TOBACCO_DESC[[k]],
+      receipts_gbp_m = parse_num(raw[[idx[[k]]]][blk$rows]),
+      provisional    = blk$provisional,
       stringsAsFactors = FALSE
     )
-  }
-
-  out <- do.call(rbind, results)
+  }))
   out <- out[order(out$product, out$date), ]
   rownames(out) <- NULL
   out

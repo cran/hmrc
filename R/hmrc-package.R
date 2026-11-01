@@ -7,28 +7,28 @@
 #' runtime via the GOV.UK Content API, so data is always current.
 #'
 #' @section Data fetchers:
-#' - [hmrc_tax_receipts()] — monthly tax receipts and NICs (April 2008+)
-#' - [hmrc_property_transactions()] — monthly property transactions (April 2005+)
-#' - [hmrc_income_tax_stats()] — annual Income Tax liabilities by income range
-#' - [hmrc_tax_gap()] — annual tax gap estimates by tax type
-#' - [hmrc_stamp_duty()] — annual stamp duty receipts (SDLT, SDRT)
-#' - [hmrc_vat()] — monthly VAT receipts breakdown (April 1973+)
-#' - [hmrc_rd_credits()] — annual R&D tax credit statistics (2000-01+)
-#' - [hmrc_fuel_duties()] — monthly fuel duty receipts (January 1990+)
-#' - [hmrc_tobacco_duties()] — monthly tobacco duty receipts (January 1991+)
-#' - [hmrc_corporation_tax()] — annual Corporation Tax receipts by type
-#' - [hmrc_capital_gains()] — annual CGT taxpayers, gains, liabilities (1987-88+)
-#' - [hmrc_inheritance_tax()] — IHT estates and liabilities by net-estate band
-#' - [hmrc_patent_box()] — annual Patent Box election counts and relief
-#' - [hmrc_creative_industries()] — annual Film/HETV/Games/Theatre/etc reliefs
+#' - [hmrc_tax_receipts()]: monthly tax receipts and NICs (rolling window, currently April 2017 onwards)
+#' - [hmrc_property_transactions()]: monthly property transactions (April 2005 onwards)
+#' - [hmrc_income_tax_stats()]: Income Tax liabilities by income range, outturn and projections
+#' - [hmrc_tax_gap()]: tax gap estimates by tax and taxpayer group (2005-06 onwards)
+#' - [hmrc_stamp_duty()]: annual stamp duty receipts (SDLT, SDRT, 2003-04 onwards)
+#' - [hmrc_vat()]: monthly VAT receipts breakdown (April 1973 onwards)
+#' - [hmrc_rd_credits()]: annual R&D tax credit statistics (2016-17 onwards)
+#' - [hmrc_fuel_duties()]: monthly fuel duty receipts (January 1990 onwards)
+#' - [hmrc_tobacco_duties()]: monthly tobacco duty receipts (January 1991 onwards)
+#' - [hmrc_corporation_tax()]: annual Corporation Tax receipts by type
+#' - [hmrc_capital_gains()]: annual CGT taxpayers, gains, liabilities (1987-88 onwards)
+#' - [hmrc_inheritance_tax()]: IHT estates and liabilities by net-estate band
+#' - [hmrc_patent_box()]: annual Patent Box election counts and relief
+#' - [hmrc_creative_industries()]: annual Film, High-end TV, Games, Theatre and other reliefs
 #'
 #' @section Discovery and infrastructure:
-#' - [hmrc_search()] — keyword search of the dataset catalogue
-#' - [hmrc_publications()] — index of implemented + planned publications
-#' - [hmrc_list_tax_heads()] — lookup table of tax-receipts identifiers
-#' - [hmrc_cache_info()] — inspect locally cached files
-#' - [hmrc_clear_cache()] — manage locally cached files
-#' - [hmrc_meta()] — extract provenance metadata from any `hmrc_tbl` result
+#' - [hmrc_search()]: keyword search of the dataset catalogue
+#' - [hmrc_publications()]: index of implemented and planned publications
+#' - [hmrc_list_tax_heads()]: lookup table of tax-receipts identifiers
+#' - [hmrc_cache_info()]: inspect locally cached files
+#' - [hmrc_clear_cache()]: manage locally cached files
+#' - [hmrc_meta()]: extract provenance metadata from any `hmrc_tbl` result
 #'
 #' @section Citation:
 #' Run `citation("hmrc")` for the structured citation, or see the

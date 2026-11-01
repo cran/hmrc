@@ -20,42 +20,55 @@ Valid values: \code{"claims"}, \code{"amount_gbp_m"}.}
 }
 \value{
 An \code{hmrc_tbl} with columns \code{tax_year}, \code{scheme}, \code{description},
-\code{measure}, \code{value}.
+\code{measure}, \code{value}, and \code{status} (HMRC's revision label, e.g.
+\code{"Unchanged"}, \code{"Provisional, Revised"}, \code{"Provisional, Uplifted"}).
 }
 \description{
 Downloads and tidies the HMRC Research and Development Tax Credits
 Statistics publication, covering the SME R&D Relief and Research and
-Development Expenditure Credit (RDEC) schemes. Annual data runs from
-2000-01 to the most recent financial year, published annually in September.
+Development Expenditure Credit (RDEC) schemes and, from 2024-25, the merged
+scheme and Enhanced R&D Intensive Support (ERIS). Annual data runs from
+2016-17 to the most recent financial year, published annually in September.
 }
 \details{
-Data before 2003-04 covers only the SME scheme (RDEC was introduced in
-2002). Figures for the most recent two years are provisional and subject
-to revision as late claims are processed.
+Figures for the most recent years are provisional and subject to revision
+as late claims are processed; the \code{status} column carries HMRC's label.
+
+For accounting periods beginning on or after 1 April 2024 the SME and RDEC
+schemes were replaced by the merged scheme and ERIS. HMRC reports these
+inside the existing groupings, so the series stay comparable over time:
+\code{sme} is HMRC's "SME Total" column, which includes SME intensives and
+ERIS; \code{rdec} is HMRC's "RDEC & Merged RDEC Total" column ("LC & RDEC
+Total" in editions before September 2026), which includes merged-scheme
+claims by large companies and SMEs; and \code{total} is HMRC's all-schemes
+total. The merged scheme and ERIS are not yet returned as separate
+schemes.
 }
 \examples{
 \donttest{
-op <- options(hmrc.cache_dir = tempdir())
-hmrc_rd_credits()
-hmrc_rd_credits(scheme = "sme", measure = "claims")
+op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+try({
+  rd <- hmrc_rd_credits(measure = "amount_gbp_m")
+  tail(rd)
+})
 options(op)
 }
 
 }
 \seealso{
-Other data fetchers: 
-\code{\link{hmrc_capital_gains}()},
-\code{\link{hmrc_corporation_tax}()},
-\code{\link{hmrc_creative_industries}()},
-\code{\link{hmrc_fuel_duties}()},
-\code{\link{hmrc_income_tax_stats}()},
-\code{\link{hmrc_inheritance_tax}()},
-\code{\link{hmrc_patent_box}()},
-\code{\link{hmrc_property_transactions}()},
-\code{\link{hmrc_stamp_duty}()},
-\code{\link{hmrc_tax_gap}()},
-\code{\link{hmrc_tax_receipts}()},
-\code{\link{hmrc_tobacco_duties}()},
-\code{\link{hmrc_vat}()}
+Other data fetchers:
+\code{\link[=hmrc_capital_gains]{hmrc_capital_gains()}},
+\code{\link[=hmrc_corporation_tax]{hmrc_corporation_tax()}},
+\code{\link[=hmrc_creative_industries]{hmrc_creative_industries()}},
+\code{\link[=hmrc_fuel_duties]{hmrc_fuel_duties()}},
+\code{\link[=hmrc_income_tax_stats]{hmrc_income_tax_stats()}},
+\code{\link[=hmrc_inheritance_tax]{hmrc_inheritance_tax()}},
+\code{\link[=hmrc_patent_box]{hmrc_patent_box()}},
+\code{\link[=hmrc_property_transactions]{hmrc_property_transactions()}},
+\code{\link[=hmrc_stamp_duty]{hmrc_stamp_duty()}},
+\code{\link[=hmrc_tax_gap]{hmrc_tax_gap()}},
+\code{\link[=hmrc_tax_receipts]{hmrc_tax_receipts()}},
+\code{\link[=hmrc_tobacco_duties]{hmrc_tobacco_duties()}},
+\code{\link[=hmrc_vat]{hmrc_vat()}}
 }
 \concept{data fetchers}

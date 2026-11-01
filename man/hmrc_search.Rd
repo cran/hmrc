@@ -38,11 +38,11 @@ hmrc_search("capital gains", implemented = FALSE)
 
 }
 \seealso{
-Other infrastructure: 
-\code{\link{hmrc_cache_info}()},
-\code{\link{hmrc_clear_cache}()},
-\code{\link{hmrc_list_tax_heads}()},
-\code{\link{hmrc_meta}()},
-\code{\link{hmrc_publications}()}
+Other infrastructure:
+\code{\link[=hmrc_cache_info]{hmrc_cache_info()}},
+\code{\link[=hmrc_clear_cache]{hmrc_clear_cache()}},
+\code{\link[=hmrc_list_tax_heads]{hmrc_list_tax_heads()}},
+\code{\link[=hmrc_meta]{hmrc_meta()}},
+\code{\link[=hmrc_publications]{hmrc_publications()}}
 }
 \concept{infrastructure}

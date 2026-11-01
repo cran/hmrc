@@ -10,7 +10,9 @@
 #'       [hmrc_tax_receipts()].}
 #'     \item{description}{Character. Plain-English description.}
 #'     \item{category}{Character. Broad grouping.}
-#'     \item{available_from}{Character. Earliest year of monthly data.}
+#'     \item{available_from}{Character. First year with receipts in HMRC's
+#'       monthly table at the package release (`NA` if none in the current
+#'       window).}
 #'   }
 #'
 #' @examples

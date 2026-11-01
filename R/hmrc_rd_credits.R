@@ -2,8 +2,9 @@
 #'
 #' Downloads and tidies the HMRC Research and Development Tax Credits
 #' Statistics publication, covering the SME R&D Relief and Research and
-#' Development Expenditure Credit (RDEC) schemes. Annual data runs from
-#' 2000-01 to the most recent financial year, published annually in September.
+#' Development Expenditure Credit (RDEC) schemes and, from 2024-25, the merged
+#' scheme and Enhanced R&D Intensive Support (ERIS). Annual data runs from
+#' 2016-17 to the most recent financial year, published annually in September.
 #'
 #' @param scheme Character vector or `NULL` (default = all schemes).
 #'   Valid values: `"sme"`, `"rdec"`, `"total"`.
@@ -12,21 +13,33 @@
 #' @param cache Logical. Use cached file if available (default `TRUE`).
 #'
 #' @return An `hmrc_tbl` with columns `tax_year`, `scheme`, `description`,
-#'   `measure`, `value`.
+#'   `measure`, `value`, and `status` (HMRC's revision label, e.g.
+#'   `"Unchanged"`, `"Provisional, Revised"`, `"Provisional, Uplifted"`).
 #'
 #' @details
-#' Data before 2003-04 covers only the SME scheme (RDEC was introduced in
-#' 2002). Figures for the most recent two years are provisional and subject
-#' to revision as late claims are processed.
+#' Figures for the most recent years are provisional and subject to revision
+#' as late claims are processed; the `status` column carries HMRC's label.
+#'
+#' For accounting periods beginning on or after 1 April 2024 the SME and RDEC
+#' schemes were replaced by the merged scheme and ERIS. HMRC reports these
+#' inside the existing groupings, so the series stay comparable over time:
+#' `sme` is HMRC's "SME Total" column, which includes SME intensives and
+#' ERIS; `rdec` is HMRC's "RDEC & Merged RDEC Total" column ("LC & RDEC
+#' Total" in editions before September 2026), which includes merged-scheme
+#' claims by large companies and SMEs; and `total` is HMRC's all-schemes
+#' total. The merged scheme and ERIS are not yet returned as separate
+#' schemes.
 #'
 #' @source
 #' <https://www.gov.uk/government/statistics/corporate-tax-research-and-development-tax-credit>
 #'
 #' @examples
 #' \donttest{
-#' op <- options(hmrc.cache_dir = tempdir())
-#' hmrc_rd_credits()
-#' hmrc_rd_credits(scheme = "sme", measure = "claims")
+#' op <- options(hmrc.cache_dir = file.path(tempdir(), "hmrc"))
+#' try({
+#'   rd <- hmrc_rd_credits(measure = "amount_gbp_m")
+#'   tail(rd)
+#' })
 #' options(op)
 #' }
 #'
@@ -79,59 +92,64 @@ hmrc_rd_credits <- function(scheme  = NULL,
     attachment_url   = loc$attachment_url,
     slug             = slug,
     cell_methods     = "counts/cash",
-    frequency        = "annual"
+    frequency        = "annual",
+    published_at     = loc$public_updated_at
   )
 }
 
 # -- Internal parser -----------------------------------------------------------
 
-parse_rd_credits_table <- function(path) {
-  read_sheet <- function(sheet, sme_col, rdec_col, total_col) {
-    raw <- readODS::read_ods(path, sheet = sheet,
-                             col_names = FALSE, as_tibble = FALSE)
-    data_rows <- raw[6:nrow(raw), ]
-    years_raw <- trimws(as.character(data_rows[[1]]))
-    valid     <- grepl("^20\\d{2}-\\d{2}$", years_raw)
-    list(
-      years     = years_raw[valid],
-      data_rows = data_rows[valid, ],
-      sme_col   = sme_col,
-      rdec_col  = rdec_col,
-      total_col = total_col
-    )
-  }
+# The RDEC total was headed "LC & RDEC Total" until the September 2026
+# edition, which added the merged scheme: "RDEC & Merged RDEC Total".
+RD_RDEC_TOTAL <- "^(lc (&|and) rdec|rdec (&|and) merged rdec) total$"
 
-  rd1 <- read_sheet("RD1", sme_col = 7L, rdec_col = 11L, total_col = 13L)
-  rd2 <- read_sheet("RD2", sme_col = 5L, rdec_col = 9L,  total_col = 11L)
+RD_DESC <- c(
+  sme   = "SME R&D Relief and ERIS",
+  rdec  = "R&D Expenditure Credit (RDEC) and merged scheme",
+  total = "All R&D schemes"
+)
 
-  if (length(rd1$years) == 0) {
-    cli::cli_abort("Could not locate year rows in R&D credits table. Please file an issue.")
-  }
-
-  extract <- function(sheet_data, col, scheme, desc, measure) {
-    if (col > ncol(sheet_data$data_rows)) return(NULL)
-    raw_vals <- as.character(sheet_data$data_rows[[col]])
-    raw_vals <- gsub(",", "", raw_vals)
-    vals <- suppressWarnings(as.numeric(raw_vals))
-    data.frame(
-      tax_year    = sheet_data$years,
-      scheme      = scheme,
-      description = desc,
-      measure     = measure,
-      value       = vals,
-      stringsAsFactors = FALSE
-    )
-  }
-
-  results <- list(
-    extract(rd1, rd1$sme_col,   "sme",   "SME R&D Relief",                "claims"),
-    extract(rd1, rd1$rdec_col,  "rdec",  "R&D Expenditure Credit (RDEC)", "claims"),
-    extract(rd1, rd1$total_col, "total", "All R&D schemes",               "claims"),
-    extract(rd2, rd2$sme_col,   "sme",   "SME R&D Relief",                "amount_gbp_m"),
-    extract(rd2, rd2$rdec_col,  "rdec",  "R&D Expenditure Credit (RDEC)", "amount_gbp_m"),
-    extract(rd2, rd2$total_col, "total", "All R&D schemes",               "amount_gbp_m")
+RD_SHEETS <- list(
+  claims = list(
+    sheet = "RD1",
+    cols  = c(status = "^status$", sme = "^sme total$",
+              rdec = RD_RDEC_TOTAL, total = "^total claims$")
+  ),
+  amount_gbp_m = list(
+    sheet = "RD2",
+    cols  = c(status = "^status$", sme = "^sme total$",
+              rdec = RD_RDEC_TOTAL, total = "^total cost")
   )
-  results <- Filter(Negate(is.null), results)
+)
+
+parse_rd_credits_table <- function(path) {
+  pub <- "R&D Tax Credits statistics"
+
+  results <- lapply(names(RD_SHEETS), function(measure) {
+    spec <- RD_SHEETS[[measure]]
+    raw  <- read_sheet_raw(path, spec$sheet, pub)
+
+    hdr <- find_row(raw, "^financial year$")[1]
+    if (is.na(hdr)) abort_schema(pub, paste0("the ", spec$sheet, " header row"))
+    idx <- match_columns(unlist(raw[hdr, ]), spec$cols, pub)
+
+    years <- parse_tax_year(raw[[1]])
+    rows  <- which(!is.na(years) & seq_along(years) > hdr)
+    if (length(rows) == 0L) abort_schema(pub, paste0("year rows in ", spec$sheet))
+    status <- trimws(as.character(raw[[idx[["status"]]]][rows]))
+
+    do.call(rbind, lapply(names(RD_DESC), function(k) {
+      data.frame(
+        tax_year    = years[rows],
+        scheme      = k,
+        description = RD_DESC[[k]],
+        measure     = measure,
+        value       = parse_num(raw[[idx[[k]]]][rows]),
+        status      = status,
+        stringsAsFactors = FALSE
+      )
+    }))
+  })
 
   out <- do.call(rbind, results)
   out <- out[order(out$scheme, out$measure, out$tax_year), ]
